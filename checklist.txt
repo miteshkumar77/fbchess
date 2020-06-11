@@ -1,0 +1,10 @@
+ - Set up firebase Cloud Firestore so that we can send and receive data. This stores the user's sessions
+ - Set up log in page and chat ui
+    - Public routing to Login O-auth
+    - Private routing to the user's messages
+ - Save sent and received messages to cloud firestore, also display as incoming message in UI 
+ - Load existing messages from cloud fire store upon log in
+
+
+
+- Cloud firestore to save session. Save data before sending over socket.io connection. 
