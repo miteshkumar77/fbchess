@@ -5,13 +5,9 @@
     "strictNullChecks": true,
     "module": "esnext",
     "jsx": "react",
-    "target": "es5",
+    "target": "esnext",
     "allowJs": true,
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -22,7 +18,5 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": [
-    "./src"
-  ]
+  "include": ["./src"]
 }

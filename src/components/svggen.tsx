@@ -41,7 +41,10 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const eight_arr = [0, 1, 2, 3, 4, 5, 6, 7];
-const piece_map = {
+interface PieceMap {
+  [key: string]: string;
+}
+const piece_map: PieceMap = {
   "22": blackPawn,
   "21": blackBishop,
   "20": blackRook,
@@ -56,52 +59,68 @@ const piece_map = {
   "11": whiteKing,
 };
 
-const board_map = {
-  W: "chessboard",
-  B: "chessboard-reverse",
-};
+interface SquareData {
+  shaded: boolean;
+  piece: string;
+}
 
-function Square(props) {
+const Square: React.FC<SquareData> = ({ shaded, piece }) => {
+  // function Square(props) {
   const classes = useStyles();
+
   return (
     <button
       className={`${
-        props.shaded ? classes.shaded_square : classes.unshaded_square
+        shaded ? classes.shaded_square : classes.unshaded_square
       }, ${classes.square}`}>
-      <img src={piece_map[props.piece]} />
+      <img src={piece_map[piece]} />
     </button>
   );
+};
+
+interface BoardData {
+  player: string;
+  data: Array<string>;
 }
 
-export default function BoardSVG({ player: player, data: data }) {
+export const BoardSVG: React.FC<BoardData> = ({ player, data }) => {
+  // export default function BoardSVG({ player: player, data: data }) {
   const classes = useStyles();
   if (player === "W") {
     let k = -1;
     let shade = true;
-    return eight_arr.map((i) => {
-      return (
-        <div className={classes.row} key={i}>
-          {eight_arr.map((j) => {
-            k += 1;
-            shade = !shade;
-            return <Square key={k} shaded={shade} piece={data[k]} />;
-          })}
-        </div>
-      );
-    });
+    return (
+      <>
+        {eight_arr.map((i) => {
+          return (
+            <div className={classes.row} key={i}>
+              {eight_arr.map((j) => {
+                k += 1;
+                shade = !shade;
+                return <Square key={k} shaded={shade} piece={data[k]} />;
+              })}
+            </div>
+          );
+        })}
+      </>
+    );
   } else {
     let k = 64;
     let shade = false;
-    return eight_arr.map((i) => {
-      return (
-        <div className={classes.row} key={i}>
-          {eight_arr.map((j) => {
-            k -= 1;
-            shade = !shade;
-            return <Square key={k} shaded={shade} piece={data[k]} />;
-          })}
-        </div>
-      );
-    });
+    return (
+      <>
+        {eight_arr.map((i) => {
+          return (
+            <div className={classes.row} key={i}>
+              {eight_arr.map((j) => {
+                k -= 1;
+                shade = !shade;
+                return <Square key={k} shaded={shade} piece={data[k]} />;
+              })}
+            </div>
+          );
+        })}
+      </>
+    );
   }
-}
+};
