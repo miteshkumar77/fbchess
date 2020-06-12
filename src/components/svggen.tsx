@@ -15,6 +15,7 @@ import whiteKing from "../pieces/white-king.png";
 
 const useStyles = makeStyles((theme) => ({
   square: {
+    background: "transparent",
     border: "1px solid",
     float: "left",
     fontSize: "24px",
@@ -28,7 +29,7 @@ const useStyles = makeStyles((theme) => ({
     width: "48px",
   },
   shaded_square: {
-    backgroundColor: "#bbbe64",
+    backgroundColor: "#010502",
   },
   unshaded_square: {
     backgroundColor: "#eaf0ce",
@@ -65,7 +66,6 @@ interface SquareData {
 }
 
 const Square: React.FC<SquareData> = ({ shaded, piece }) => {
-  // function Square(props) {
   const classes = useStyles();
 
   return (
@@ -84,7 +84,6 @@ interface BoardData {
 }
 
 export const BoardSVG: React.FC<BoardData> = ({ player, data }) => {
-  // export default function BoardSVG({ player: player, data: data }) {
   const classes = useStyles();
   if (player === "W") {
     let k = -1;
