@@ -6,6 +6,7 @@ import Typography from "@material-ui/core/Typography";
 import Button from "@material-ui/core/Button";
 import { Link } from "react-router-dom";
 import { auth } from "../services/firebase";
+import { LoginButton, SignupButton } from "../components/navigation";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -20,7 +21,7 @@ const useStyles = makeStyles((theme) => ({
   button: {},
 }));
 
-export default function Header({}, {}) {
+export default function Header() {
   const classes = useStyles();
 
   return (
@@ -31,15 +32,9 @@ export default function Header({}, {}) {
             Chess App
           </Typography>
           <div className={classes.right}>
-            <Button className={classes.button} color="inherit">
-              <Link to="/login" />
-              Login
-            </Button>
+            <LoginButton />
 
-            <Button className={classes.button} color="inherit">
-              <Link to="/signup" />
-              Sign Up
-            </Button>
+            <SignupButton />
           </div>
         </Toolbar>
       </AppBar>

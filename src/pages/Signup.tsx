@@ -1,5 +1,6 @@
 import React, { Component } from "react";
-
+import { signup } from "../helpers/auth";
+import Form from "../components/form";
 class Signup extends Component<{}, {}> {
   constructor(props: {}) {
     super(props);
@@ -9,6 +10,8 @@ class Signup extends Component<{}, {}> {
     return (
       <div>
         <h1>Signup.</h1>
+        <h1>H</h1>
+        <Form onSubmit={signup} />
       </div>
     );
   }

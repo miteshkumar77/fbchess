@@ -1,3 +1,14 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { auth } from "../services/firebase";
+import { makeStyles } from "@material-ui/core/styles";
+
+const useStyles = makeStyles((theme) => {});
+
+export default function Footer() {
+  return (
+    <footer className="pt-5">
+      <div className="container text-center">
+        <p>&copy; FBChess 2020.</p>
+      </div>
+    </footer>
+  );
+}
