@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { useHistory } from "react-router-dom";
 import Button from "@material-ui/core/Button";
+import { logout } from "../helpers/auth";
 
 export function LoginButton() {
   let history = useHistory();
@@ -34,7 +35,8 @@ export function LogoutButton() {
   let history = useHistory();
 
   function handleClick() {
-    history.push("/home");
+    history.push("/");
+    logout();
   }
 
   return (

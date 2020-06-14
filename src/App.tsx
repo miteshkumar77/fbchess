@@ -90,6 +90,7 @@ class App extends Component<Props, State> {
     });
   }
   render() {
+    console.log(this.state.authenticated);
     return this.state.loading === true ? (
       <h2>Loading...</h2>
     ) : (
