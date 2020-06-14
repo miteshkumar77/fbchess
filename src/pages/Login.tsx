@@ -1,10 +1,15 @@
-import React, { Component } from "react";
+import React, { Component, SyntheticEvent } from "react";
 import { Link } from "react-router-dom";
 import { signin, signInWithGoogle, signInWithGitHub } from "../helpers/auth";
 
-export default class Login extends Component {
-  constructor() {
-    super();
+interface State {
+  error: string | null;
+  email: string;
+  password: string;
+}
+export default class Login extends Component<{}, State> {
+  constructor(props: {}) {
+    super(props);
     this.state = {
       error: null,
       email: "",
@@ -16,13 +21,17 @@ export default class Login extends Component {
     this.githubSignIn = this.githubSignIn.bind(this);
   }
 
-  handleChange(event) {
+  handleChange(event: SyntheticEvent) {
+    const target = event.target as HTMLTextAreaElement;
+    const name = target.name;
+    const value = target.value as string;
     this.setState({
-      [event.target.name]: event.target.value,
+      ...this.state,
+      [name]: value,
     });
   }
 
-  async handleSubmit(event) {
+  async handleSubmit(event: SyntheticEvent) {
     event.preventDefault();
     this.setState({ error: "" });
     try {
