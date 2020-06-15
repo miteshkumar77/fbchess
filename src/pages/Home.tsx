@@ -15,6 +15,7 @@ const useStyles = makeStyles((theme) => ({
   flex: {
     flex: "true",
     textAlign: "center",
+    alignContent: "center",
   },
 }));
 
