@@ -1,4 +1,4 @@
-import React, { useReducer } from "react";
+import React, { Component } from "react";
 import { LogoutButton } from "../components/navigation";
 import { makeStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
@@ -6,9 +6,12 @@ import Typography from "@material-ui/core/Typography";
 import { getCurrentUser } from "../helpers/auth";
 import { board_default } from "../components/board_formulas";
 import { BoardSVG } from "../components/svggen";
+<<<<<<< HEAD:client/src/pages/Chat.tsx
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
 
+=======
+>>>>>>> parent of 194bafa... use reducer:src/pages/Chat.tsx
 const useStyles = makeStyles((theme) => ({
   flexh: {
     display: "flex",
@@ -28,15 +31,8 @@ const useStyles = makeStyles((theme) => ({
     overflow: "scroll",
     maxHeight: "70vh",
   },
-  chat_list: {
-    maxWidth: "30vw",
-    minWidth: "30vw",
-  },
-  chat_terminal: {
-    minWidth: "30vw",
-    minHeight: "10vh",
-    maxHeight: "10vh",
-  },
+  chat_list: {},
+  chat_terminal: {},
   invite: {},
   leaving_message: {
     margin: "10px",
@@ -54,8 +50,6 @@ const useStyles = makeStyles((theme) => ({
   },
   system_message: {
     margin: "10px",
-    marginLeft: "20px",
-    marginRight: "20px",
     textAlign: "center",
     background: "#bdbdbd",
   },
@@ -70,7 +64,6 @@ interface msg {
   type: string;
   msg: string;
 }
-
 const messageHist = [
   {
     from: "miteshkumarca@gmail.com",
@@ -85,18 +78,23 @@ const messageHist = [
     msg: "SUP.",
   },
   {
-    from: "SYSTEM",
-    to: "miteshkumarca@gmail.com",
-    type: "board",
-    msg: board_default.toString(),
-  },
-];
-const messageHist2 = [
-  {
     from: "miteshkumarca@gmail.com",
     to: "usr1x5b",
     type: "msg",
     msg: "Hi there.",
+  },
+  {
+    from: "usr1x5b",
+    to: "miteshkumarca@gmail.com",
+    type: "msg",
+    msg: "SUP.",
+  },
+  {
+    from: "miteshkumarca@gmail.com",
+    to: "usr1x5b",
+    type: "msg",
+    msg:
+      "Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.",
   },
   {
     from: "usr1x5b",
@@ -111,28 +109,6 @@ const messageHist2 = [
     msg: board_default.toString(),
   },
 ];
-const messageHist3 = [
-  {
-    from: "miteshkumarca@gmail.com",
-    to: "usr1x5b",
-    type: "msg",
-    msg: "Hi there.",
-  },
-  {
-    from: "usr1x5b",
-    to: "miteshkumarca@gmail.com",
-    type: "msg",
-    msg: "SUP.",
-  },
-  {
-    from: "SYSTEM",
-    to: "miteshkumarca@gmail.com",
-    type: "board",
-    msg: board_default.toString(),
-  },
-];
-
-const chatRooms = [messageHist, messageHist2, messageHist3];
 
 export default function Chat() {
   const classes = useStyles();
@@ -195,15 +171,9 @@ export default function Chat() {
               })}
             </div>
             <div className={classes.chat_terminal}>
-              <div className={classes.flexh}>
-                <TextField
-                  id="standard-search"
-                  label="Enter Move"
-                  type="search"
-                  fullWidth={true}
-                />
-                <Button>SEND</Button>
-              </div>
+              <Typography variant="h3">
+                Chat terminal to enter text shows here.
+              </Typography>
             </div>
           </div>
         </div>
