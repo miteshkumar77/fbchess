@@ -10,6 +10,7 @@ import Chat from "./pages/Chat";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import { auth } from "./services/firebase";
+import { Store } from "./components/message_reducer";
 
 interface routeHandler {
   component: React.ElementType;
@@ -28,7 +29,9 @@ const PrivateRoute: React.FC<routeHandler> = ({
       {...rest}
       render={(props) =>
         authenticated === true ? (
-          <Component {...props} />
+          <Store>
+            <Component {...props} />
+          </Store>
         ) : (
           <Redirect
             to={{ pathname: "/login", state: { from: props.location } }}
@@ -97,6 +100,7 @@ class App extends Component<Props, State> {
       <Router>
         <Switch>
           <Route exact path="/" component={Home}></Route>
+
           <PrivateRoute
             path="/chat"
             authenticated={this.state.authenticated}
