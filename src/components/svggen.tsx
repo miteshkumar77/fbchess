@@ -14,8 +14,8 @@ import whiteKnight from "../pieces/white-knight.png";
 import whiteKing from "../pieces/white-king.png";
 
 const useStyles = makeStyles((theme) => ({
-  square: {
-    background: "transparent",
+  black_square: {
+    backgroundColor: "grey",
     border: "1px solid",
     float: "left",
     fontSize: "24px",
@@ -28,16 +28,27 @@ const useStyles = makeStyles((theme) => ({
     textAlign: "center",
     width: "48px",
   },
-  shaded_square: {
-    backgroundColor: "#010502",
-  },
-  unshaded_square: {
-    backgroundColor: "#eaf0ce",
+  white_square: {
+    backgroundColor: "white",
+    border: "1px solid",
+    float: "left",
+    fontSize: "24px",
+    fontWeight: "bold",
+    lineHeight: "34px",
+    height: "48px",
+    marginRight: "-1px",
+    marginTop: "-1px",
+    padding: "0",
+    textAlign: "center",
+    width: "48px",
   },
   row: {
     clear: "both",
     content: "",
     display: "table",
+  },
+  board: {
+    margin: "3px",
   },
 }));
 
@@ -64,17 +75,12 @@ interface SquareData {
   shaded: boolean;
   piece: string;
 }
-
 const Square: React.FC<SquareData> = ({ shaded, piece }) => {
   const classes = useStyles();
-
   return (
-    <button
-      className={`${
-        shaded ? classes.shaded_square : classes.unshaded_square
-      }, ${classes.square}`}>
-      <img src={piece_map[piece]} />
-    </button>
+    <div className={shaded ? classes.black_square : classes.white_square}>
+      {piece_map[piece] ? <img src={piece_map[piece]} /> : null}
+    </div>
   );
 };
 
@@ -85,13 +91,13 @@ interface BoardData {
 
 export const BoardSVG: React.FC<BoardData> = ({ player, data }) => {
   const classes = useStyles();
-  if (player === "W") {
+  if (player === "B") {
     let k = -1;
-    let shade = true;
+    let shade = false;
     return (
-      <>
+      <div className={classes.board}>
         {eight_arr.map((i) => {
-          return (
+          const html = (
             <div className={classes.row} key={i}>
               {eight_arr.map((j) => {
                 k += 1;
@@ -100,16 +106,18 @@ export const BoardSVG: React.FC<BoardData> = ({ player, data }) => {
               })}
             </div>
           );
+          shade = !shade;
+          return html;
         })}
-      </>
+      </div>
     );
   } else {
     let k = 64;
-    let shade = false;
+    let shade = true;
     return (
-      <>
+      <div className={classes.board}>
         {eight_arr.map((i) => {
-          return (
+          const html = (
             <div className={classes.row} key={i}>
               {eight_arr.map((j) => {
                 k -= 1;
@@ -118,8 +126,10 @@ export const BoardSVG: React.FC<BoardData> = ({ player, data }) => {
               })}
             </div>
           );
+          shade = !shade;
+          return html;
         })}
-      </>
+      </div>
     );
   }
 };

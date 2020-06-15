@@ -21,3 +21,7 @@ export function signInWithGitHub() {
 export function logout() {
   return auth().signOut();
 }
+
+export function getCurrentUser() {
+  return auth().currentUser;
+}
