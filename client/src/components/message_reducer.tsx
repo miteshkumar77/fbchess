@@ -1,13 +1,14 @@
 import React from "react";
+import { board_default } from "../components/board_formulas";
 
-interface msg {
+export interface msg {
   from: string;
   to: string;
   type: string;
   msg: string;
 }
 
-interface rooms {
+export interface rooms {
   [roomID: string]: {
     playerBlack: string;
     playerWhite: string;
@@ -15,7 +16,7 @@ interface rooms {
   };
 }
 
-interface actionType {
+export interface actionType {
   type: string;
   payload: {
     roomID: string;
@@ -44,7 +45,13 @@ const initState: rooms = {
         from: "miteshkumarca@gmail.com",
         to: "friend",
         type: "msg",
-        msg: "kys",
+        msg: "hi",
+      },
+      {
+        from: "system",
+        to: "friend",
+        type: "board",
+        msg: board_default.toString(),
       },
     ],
   },
@@ -96,6 +103,9 @@ function reducer(state: rooms, action: actionType) {
           },
         },
       };
+
+    case "SEND_MESSAGE":
+      console.log(action.payload.msg);
     default:
       return state;
   }
