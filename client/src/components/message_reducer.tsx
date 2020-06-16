@@ -97,15 +97,11 @@ function reducer(state: rooms, action: actionType) {
         [action.payload.roomID]: {
           playerWhite: state[action.payload.roomID].playerWhite,
           playerBlack: state[action.payload.roomID].playerBlack,
-          history: {
-            ...state[action.payload.roomID].history,
-            msg,
-          },
+          history: [...state[action.payload.roomID].history, msg],
         },
       };
 
     case "SEND_MESSAGE":
-      console.log(action.payload.msg);
     default:
       return state;
   }
