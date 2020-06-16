@@ -71,53 +71,10 @@ const useStyles = makeStyles((theme) => ({
   existing_chat_button: {
     border: "1px solid grey",
   },
+  invite_key: {
+    margin: "10px",
+  },
 }));
-
-// const messageHist = [
-//   {
-//     from: "miteshkumarca@gmail.com",
-//     to: "usr1x5b",
-//     type: "msg",
-//     msg: "Hi there.",
-//   },
-//   {
-//     from: "usr1x5b",
-//     to: "miteshkumarca@gmail.com",
-//     type: "msg",
-//     msg: "SUP.",
-//   },
-//   {
-//     from: "miteshkumarca@gmail.com",
-//     to: "usr1x5b",
-//     type: "msg",
-//     msg: "Hi there.",
-//   },
-//   {
-//     from: "usr1x5b",
-//     to: "miteshkumarca@gmail.com",
-//     type: "msg",
-//     msg: "SUP.",
-//   },
-//   {
-//     from: "miteshkumarca@gmail.com",
-//     to: "usr1x5b",
-//     type: "msg",
-//     msg:
-//       "Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.Hi there.",
-//   },
-//   {
-//     from: "usr1x5b",
-//     to: "miteshkumarca@gmail.com",
-//     type: "msg",
-//     msg: "SUP.",
-//   },
-//   {
-//     from: "SYSTEM",
-//     to: "miteshkumarca@gmail.com",
-//     type: "board",
-//     msg: board_default.toString(),
-//   },
-// ];
 
 export default function Chat() {
   const classes = useStyles();
@@ -186,6 +143,7 @@ export default function Chat() {
               />
             </div>
           </div>
+
           <div className={classes.flexv}>
             <div className={classes.chat_history}>
               {activeRoomID ? (
@@ -282,12 +240,21 @@ export default function Chat() {
                       dispatch(action);
                       changeTextValue("");
                     }
-                  }}>
+                  }}
+                  variant="contained"
+                  color="secondary">
                   SEND
                 </Button>
               </div>
             </div>
           </div>
+          <Paper>
+            <Typography className={classes.invite_key} color="primary">
+              {activeRoomID
+                ? "Invite with this key: " + activeRoomID
+                : "Make a room to see invite key."}
+            </Typography>
+          </Paper>
         </div>
       </Paper>
     </div>
