@@ -1,0 +1,65 @@
+const useStyles = makeStyles((theme) => ({
+  flexh: {
+    // display: "flex",
+  },
+  root: {
+    // padding: theme.spacing(3, 2),
+    // marginLeft: "10vw",
+    // marginRight: "10vw",
+    // marginTop: "10px",
+    // marginBottom: "10px",
+  },
+  flexv: {
+    // display: "flex",
+    // flexDirection: "column",
+  },
+  chat_history: {
+    // overflow: "scroll",
+    // maxHeight: "70vh",
+    // minHeight: "70vh",
+    // minWidth: "40vw",
+    // maxWidth: "40vw",
+  },
+  chat_list: {
+    // display: "flex",
+    // flexDirection: "column",
+    // maxWidth: "20vw",
+    // maxHeight: "30vw",
+    // minHeight: "30vw",
+    // overflow: "scroll",
+  },
+  chat_terminal: {},
+  invite: {
+    // display: "flex",
+    // flexDirection: "row",
+    // alignContent: "center",
+  },
+  leaving_message: {
+    // margin: "10px",
+    // marginLeft: "20px",
+    // marginRight: "20px",
+    // textAlign: "right",
+    // background: "white",
+  },
+  arriving_message: {
+    // margin: "10px",
+    // marginLeft: "20px",
+    // marginRight: "20px",
+    // textAlign: "left",
+    // background: "#90caf9",
+  },
+  system_message: {
+    // margin: "10px",
+    // textAlign: "center",
+    // background: "#bdbdbd",
+  },
+  chat_text: {
+    // margin: "10px",
+  },
+  existing_chat_button: {
+    // border: "1px solid grey",
+  },
+  invite_key: {
+    // margin: "10px",
+  },
+}));

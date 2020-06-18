@@ -1,34 +1,23 @@
-var app = require("express")();
-var http = require("http").createServer(app);
-var io = require("socket.io")(http);
-const mongoose = require("mongoose");
+const express = require("express");
+const socketio = require("socket.io");
+const http = require("http");
 const config = require("./config");
+const router = require("./router");
+const PORT = process.env.PORT || config.server_port;
 
-const socket_runner = async () => {
-  const port = process.env.PORT || config.server_port;
-  app.get("/", (req, res) => {
-    res.sendFile(__dirname + "/index.html");
-  });
+const app = express();
+const server = http.createServer(app);
+const io = socketio(server);
 
-  io.on("connection", (socket) => {
-    console.log("a user connected");
-  });
-  http.listen(port, () => {
-    console.log("listening on *:" + port);
-  });
-};
+app.use(router);
 
-mongoose
-  .connect(config.db_connection_string, {
-    useNewURLParser: true,
-    useUnifiedTopology: true,
-  })
-  .catch((err) => {
-    console.log(err);
+io.on("connection", (socket) => {
+  console.log("A user connected.");
+  socket.on("disconnect", () => {
+    console.log("A user has left.");
   });
-const db = mongoose.connection;
-db.on("error", console.error.bind(console, "connection error:"));
-db.once("open", () => {
-  console.log("Connected to DB");
-  socket_runner();
+});
+
+server.listen(PORT, () => {
+  console.log(`Server started on port ${PORT}`);
 });

@@ -102,6 +102,17 @@ function reducer(state: rooms, action: actionType) {
       };
 
     case "SEND_MESSAGE":
+      console.log("MSG SEND");
+      return state;
+    case "LEAVE_CURRENT_ROOM":
+      console.log("LEAVE_CURRENT_ROOM");
+      return state;
+    case "JOIN_EXISTING_ROOM":
+      console.log("JOIN_EXISTING_ROOM");
+      return state;
+    case "NEW_ROOM":
+      console.log("NEW_ROOM");
+      return state;
     default:
       return state;
   }

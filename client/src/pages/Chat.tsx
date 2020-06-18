@@ -10,6 +10,8 @@ import Button from "@material-ui/core/Button";
 import { CTX } from "../components/message_reducer";
 import { msg, rooms, actionType } from "../components/message_reducer";
 import PrivateHeader from "../components/privateHeader";
+import io from "socket.io-client";
+
 const useStyles = makeStyles((theme) => ({
   flexh: {
     display: "flex",
@@ -96,6 +98,15 @@ export default function Chat() {
   const [activeRoomID, changeActiveRoom] = React.useState(default_room());
   const [textValue, changeTextValue] = React.useState("");
 
+  React.useEffect(() => {
+    const ENDPOINT: string = "http://localhost:3001";
+    const socket = io(ENDPOINT);
+
+    return () => {
+      socket.close();
+    };
+  }, []);
+
   return (
     <div>
       <PrivateHeader />
@@ -127,20 +138,42 @@ export default function Chat() {
                 </Button>
               )}
             </div>
-            <div className={classes.invite}>
-              <Button variant="contained" fullWidth={false} color="secondary">
-                New
-              </Button>
+            <div className={classes.flexv}>
+              <div className={classes.invite}>
+                <Button
+                  variant="contained"
+                  fullWidth={false}
+                  color="secondary"
+                  onClick={() => {
+                    if (email && activeRoomID) {
+                      const action: actionType = {
+                        type: "NEW",
+                        payload: {
+                          msg: {
+                            from: email,
+                            to: "N/A",
+                            type: "N/A",
+                            msg: "N/A",
+                          },
+                          roomID: activeRoomID,
+                        },
+                      };
+                    }
+                  }}>
+                  New
+                </Button>
 
-              <Button variant="contained" color="primary">
-                Join
-              </Button>
-              <TextField
-                id="standard-search"
-                label="Enter a room ID"
-                type="search"
-                fullWidth={true}
-              />
+                <Button variant="contained" color="primary">
+                  Join
+                </Button>
+                <TextField
+                  id="standard-search"
+                  label="Enter a room ID"
+                  type="search"
+                  fullWidth={true}
+                />
+              </div>
+              <Button variant="outlined">Leave Current Room</Button>
             </div>
           </div>
 
