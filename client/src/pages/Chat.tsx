@@ -11,6 +11,7 @@ import { CTX } from "../components/message_reducer";
 import { msg, rooms, actionType } from "../components/message_reducer";
 import PrivateHeader from "../components/privateHeader";
 import io from "socket.io-client";
+let socket: SocketIOClient.Socket;
 
 const useStyles = makeStyles((theme) => ({
   flexh: {
@@ -97,12 +98,25 @@ export default function Chat() {
 
   const [activeRoomID, changeActiveRoom] = React.useState(default_room());
   const [textValue, changeTextValue] = React.useState("");
-
+  const [addRoomValue, changeAddRoomValue] = React.useState("");
   React.useEffect(() => {
     const ENDPOINT: string = "http://localhost:3001";
-    const socket = io(ENDPOINT);
+    socket = io(ENDPOINT);
+
+    socket.emit(
+      "begin",
+      { userID: email },
+      ({ error, usersRooms }: { error: any; usersRooms: any }) => {
+        if (error) {
+          alert(error);
+        } else {
+          console.log(usersRooms);
+        }
+      }
+    );
 
     return () => {
+      socket.emit("end", { userID: email });
       socket.close();
     };
   }, []);
@@ -123,11 +137,17 @@ export default function Chat() {
                       className={classes.existing_chat_button}
                       key={idx}
                       value={roomID}
+                      variant="contained"
+                      color={activeRoomID == roomID ? "secondary" : undefined}
                       onClick={(e) => {
                         changeActiveRoom(e.currentTarget.value);
                       }}>
                       <Typography variant="h6">
-                        {room.playerBlack + " and " + room.playerWhite}
+                        {roomID +
+                          ": " +
+                          room.playerBlack +
+                          " and " +
+                          room.playerWhite}
                       </Typography>
                     </Button>
                   );
@@ -146,34 +166,88 @@ export default function Chat() {
                   color="secondary"
                   onClick={() => {
                     if (email && activeRoomID) {
+                      const msg: msg = {
+                        from: email,
+                        to: "N/A",
+                        type: "N/A",
+                        msg: "N/A",
+                      };
                       const action: actionType = {
-                        type: "NEW",
+                        type: "NEW_ROOM",
                         payload: {
-                          msg: {
-                            from: email,
-                            to: "N/A",
-                            type: "N/A",
-                            msg: "N/A",
-                          },
+                          msg: msg,
                           roomID: activeRoomID,
                         },
                       };
+
+                      dispatch(action);
+                    } else {
+                      console.log("err");
                     }
                   }}>
                   New
                 </Button>
 
-                <Button variant="contained" color="primary">
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => {
+                    if (email && activeRoomID && addRoomValue) {
+                      const msg: msg = {
+                        from: email,
+                        to: "N/A",
+                        type: "N/A",
+                        msg: "N/A",
+                      };
+                      const action: actionType = {
+                        type: "JOIN_EXISTING_ROOM",
+                        payload: {
+                          msg: msg,
+                          roomID: addRoomValue,
+                        },
+                      };
+
+                      dispatch(action);
+                    }
+                  }}>
                   Join
                 </Button>
                 <TextField
                   id="standard-search"
                   label="Enter a room ID"
                   type="search"
+                  value={addRoomValue}
                   fullWidth={true}
+                  onChange={(e) => {
+                    changeAddRoomValue(e.target.value);
+                  }}
                 />
               </div>
-              <Button variant="outlined">Leave Current Room</Button>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  if (email && activeRoomID) {
+                    const msg: msg = {
+                      from: email,
+                      to: "N/A",
+                      type: "N/A",
+                      msg: "N/A",
+                    };
+                    const action: actionType = {
+                      type: "LEAVE_CURRENT_ROOM",
+                      payload: {
+                        msg: msg,
+                        roomID: activeRoomID,
+                      },
+                    };
+
+                    dispatch(action);
+                  } else {
+                    console.log("err");
+                  }
+                }}>
+                Leave Current Room
+              </Button>
             </div>
           </div>
 
