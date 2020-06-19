@@ -100,7 +100,7 @@ export default function Chat() {
   const [textValue, changeTextValue] = React.useState("");
   const [addRoomValue, changeAddRoomValue] = React.useState("");
   React.useEffect(() => {
-    const ENDPOINT: string = "http://localhost:3001";
+    const ENDPOINT: string = "http://localhost:3009";
     socket = io(ENDPOINT);
 
     socket.emit(
