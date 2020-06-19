@@ -10,7 +10,8 @@ import Chat from "./pages/Chat";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import { auth } from "./services/firebase";
-import { Store } from "./components/message_reducer";
+import { Store, rooms } from "./components/message_reducer";
+import { getCurrentUser } from "./helpers/auth";
 
 interface routeHandler {
   component: React.ElementType;

@@ -7,11 +7,9 @@ import { getCurrentUser } from "../helpers/auth";
 import { BoardSVG } from "../components/svggen";
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
-import { CTX } from "../components/message_reducer";
+import { CTX, initializeType } from "../components/message_reducer";
 import { msg, rooms, actionType } from "../components/message_reducer";
 import PrivateHeader from "../components/privateHeader";
-import io from "socket.io-client";
-let socket: SocketIOClient.Socket;
 
 const useStyles = makeStyles((theme) => ({
   flexh: {
@@ -83,10 +81,11 @@ export default function Chat() {
   const classes = useStyles();
   const email = getCurrentUser()?.email;
   const useCTX = React.useContext(CTX);
-  const allRooms = useCTX.state;
+  let allRooms: rooms;
 
   const dispatch = useCTX.disp;
 
+  allRooms = useCTX.state;
   const default_room = () => {
     const okeys = Object.keys(allRooms);
     if (okeys.length == 0) {
@@ -99,27 +98,6 @@ export default function Chat() {
   const [activeRoomID, changeActiveRoom] = React.useState(default_room());
   const [textValue, changeTextValue] = React.useState("");
   const [addRoomValue, changeAddRoomValue] = React.useState("");
-  React.useEffect(() => {
-    const ENDPOINT: string = "http://localhost:3009";
-    socket = io(ENDPOINT);
-
-    socket.emit(
-      "begin",
-      { userID: email },
-      ({ error, usersRooms }: { error: any; usersRooms: any }) => {
-        if (error) {
-          alert(error);
-        } else {
-          console.log(usersRooms);
-        }
-      }
-    );
-
-    return () => {
-      socket.emit("end", { userID: email });
-      socket.close();
-    };
-  }, []);
 
   return (
     <div>
@@ -181,8 +159,6 @@ export default function Chat() {
                       };
 
                       dispatch(action);
-                    } else {
-                      console.log("err");
                     }
                   }}>
                   New
@@ -338,7 +314,7 @@ export default function Chat() {
                       };
 
                       const action: actionType = {
-                        type: "SEND_MESSAGE",
+                        type: "RECEIVE_MESSAGE",
                         payload: {
                           msg: send_val,
                           roomID: activeRoomID,
