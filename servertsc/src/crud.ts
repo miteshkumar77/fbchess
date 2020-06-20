@@ -7,7 +7,7 @@ interface userStoreType {
   };
 }
 
-interface msgType {
+export interface msgType {
   from: string;
   to: string;
   type: string;

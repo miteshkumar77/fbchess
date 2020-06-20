@@ -2,6 +2,7 @@ import React from "react";
 import { board_default } from "../components/board_formulas";
 import { getCurrentUser } from "../helpers/auth";
 import io from "socket.io-client";
+import { stringify } from "querystring";
 
 export interface msg {
   from: string;
@@ -35,6 +36,7 @@ export interface initializeType {
   };
 }
 
+let socket: SocketIOClient.Socket;
 const initState: rooms = {
   room1: {
     playerBlack: "friend",
@@ -113,7 +115,7 @@ function reducer(state: rooms, action: actionType | initializeType) {
       };
 
     case "SEND_MESSAGE":
-      console.log("MSG SEND");
+      socket.emit("outbound_message", action.payload.roomID, msg);
       return state;
     case "LEAVE_CURRENT_ROOM":
       console.log("LEAVE_CURRENT_ROOM");
@@ -130,8 +132,6 @@ function reducer(state: rooms, action: actionType | initializeType) {
       return state;
   }
 }
-
-let socket: SocketIOClient.Socket;
 
 export function Store(props: any) {
   const email = getCurrentUser()?.email;
@@ -163,10 +163,25 @@ export function Store(props: any) {
               roomID: "",
             },
           };
+
           dispatch(action);
         }
       }
     );
+
+    socket.on("message", (roomID: string, message: msg) => {
+      console.log("MESSAGE RECEIVED: ");
+      console.log(message);
+      let action: actionType = {
+        type: "RECEIVE_MESSAGE",
+        payload: {
+          msg: message,
+          roomID: roomID,
+        },
+      };
+
+      dispatch(action);
+    });
 
     return () => {
       socket.emit("deinitialize", email, () => {

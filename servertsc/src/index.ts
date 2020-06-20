@@ -16,6 +16,7 @@ import {
   userJoinRoom,
   userLeaveRoom,
   getMessageHist,
+  msgType,
 } from "./crud";
 
 const app = express();
@@ -32,15 +33,28 @@ io.on("connection", (socket) => {
     error = userConnect(email)?.error;
     if (error) {
       callback({ error: error });
+      return;
     }
 
     let response = getMessageHist(email);
     console.log(response.roomsList);
+
+    if (response.roomsList) {
+      socket.join(Object.keys(response.roomsList));
+      console.log(Object.keys(response.roomsList));
+    }
     callback({ hist: response.roomsList });
   });
 
+  socket.on("outbound_message", (roomID: string, message: msgType) => {
+    console.log("Message received: ");
+    console.log(message);
+    saveMsg(message.from, roomID, message.msg);
+    io.in(roomID).emit("message", roomID, message);
+  });
   socket.on("deinitialize", (email: string, callback) => {
     console.log(`Disconnecting user ${email}.`);
+    socket.leaveAll();
     userDisconnect(email);
     callback();
   });

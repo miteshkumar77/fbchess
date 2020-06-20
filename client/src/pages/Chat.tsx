@@ -314,7 +314,7 @@ export default function Chat() {
                       };
 
                       const action: actionType = {
-                        type: "RECEIVE_MESSAGE",
+                        type: "SEND_MESSAGE",
                         payload: {
                           msg: send_val,
                           roomID: activeRoomID,
