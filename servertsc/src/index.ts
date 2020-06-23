@@ -18,6 +18,7 @@ import {
   getMessageHist,
   msgType,
   getUsersRooms,
+  getRoomPlayers,
 } from "./crud";
 
 interface userSocketMapType {
@@ -89,14 +90,51 @@ io.on("connection", (socket) => {
 
       socket.join(roomID);
       if (result.updatedRoom) {
-        io.to(userSocket[result.updatedRoom.playerBlack]).emit(
-          "incoming_room",
-          getUsersRooms(result.updatedRoom.playerBlack)
-        );
+        if (result.updatedRoom.playerBlack in userSocket) {
+          io.to(userSocket[result.updatedRoom.playerBlack]).emit(
+            "incoming_room",
+            getUsersRooms(result.updatedRoom.playerBlack)
+          );
+        }
 
-        io.to(userSocket[result.updatedRoom.playerWhite]).emit(
+        if (result.updatedRoom.playerWhite in userSocket) {
+          io.to(userSocket[result.updatedRoom.playerWhite]).emit(
+            "incoming_room",
+            getUsersRooms(result.updatedRoom.playerWhite)
+          );
+        }
+      }
+    }
+  );
+
+  socket.on(
+    "leave_room",
+    (
+      userID: string,
+      roomID: string,
+      callback: ({ error }: { error: string }) => void
+    ) => {
+      let { playerBlack, playerWhite, error } = getRoomPlayers(roomID);
+      if (error) {
+        callback({ error: error });
+        return;
+      }
+
+      let result = userLeaveRoom(userID, roomID);
+      if (result?.error) {
+        callback({ error: result.error });
+        return;
+      }
+      if (playerBlack && playerBlack in userSocket) {
+        io.to(userSocket[playerBlack]).emit(
           "incoming_room",
-          getUsersRooms(result.updatedRoom.playerWhite)
+          getUsersRooms(playerBlack)
+        );
+      }
+      if (playerWhite && playerWhite in userSocket) {
+        io.to(userSocket[playerWhite]).emit(
+          "incoming_room",
+          getUsersRooms(playerWhite)
         );
       }
     }

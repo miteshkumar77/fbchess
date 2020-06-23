@@ -199,9 +199,11 @@ const loadUser = (userID: string) => {
       return { error: `user ${userID} doesn't exist.` };
     }
     loadedUsers[userID] = usersDB[userID];
-  } else {
-    return { error: `user ${userID} already loaded.` };
   }
+
+  // else {
+  //   return { error: `user ${userID} already loaded.` };
+  // }
 };
 
 const createRoomInDB = () => {
@@ -355,6 +357,9 @@ export const userLeaveRoom = (userID: string, roomID: string) => {
     };
   }
 
+  loadedUsers[userID].rooms = loadedUsers[userID].rooms.filter(
+    (userRoomID) => userRoomID != roomID
+  );
   if (
     loadedRooms[roomID].playerBlack == "" &&
     loadedRooms[roomID].playerWhite == ""
@@ -410,4 +415,19 @@ const unloadUser = (userID: string) => {
 
   usersDB[userID] = loadedUsers[userID];
   delete loadedUsers[userID];
+};
+
+export const getRoomPlayers = (roomID: string) => {
+  if (!(roomID in roomsDB)) {
+    return { error: `room ${roomID} does not exist.` };
+  }
+
+  if (!(roomID in loadedRooms)) {
+    return { error: `room ${roomID} has not been loaded` };
+  }
+
+  return {
+    playerBlack: loadedRooms[roomID].playerBlack,
+    playerWhite: loadedRooms[roomID].playerWhite,
+  };
 };

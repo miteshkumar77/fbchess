@@ -123,7 +123,16 @@ function reducer(state: rooms, action: actionType | initializeType) {
       socket.emit("outbound_message", action.payload.roomID, msg);
       return state;
     case "LEAVE_CURRENT_ROOM":
-      console.log("LEAVE_CURRENT_ROOM");
+      socket.emit(
+        "leave_room",
+        email,
+        action.payload.roomID,
+        ({ error }: { error: string }) => {
+          if (error) {
+            alert(error);
+          }
+        }
+      );
       return state;
     case "JOIN_EXISTING_ROOM":
       socket.emit(

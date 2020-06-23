@@ -142,7 +142,7 @@ export default function Chat() {
                   fullWidth={false}
                   color="secondary"
                   onClick={() => {
-                    if (email && activeRoomID) {
+                    if (email) {
                       const msg: msg = {
                         from: email,
                         to: "N/A",
@@ -153,7 +153,7 @@ export default function Chat() {
                         type: "NEW_ROOM",
                         payload: {
                           msg: msg,
-                          roomID: activeRoomID,
+                          roomID: "",
                         },
                       };
 
@@ -167,7 +167,7 @@ export default function Chat() {
                   variant="contained"
                   color="primary"
                   onClick={() => {
-                    if (email && activeRoomID && addRoomValue) {
+                    if (email && addRoomValue) {
                       const msg: msg = {
                         from: email,
                         to: "N/A",
@@ -202,6 +202,7 @@ export default function Chat() {
                 variant="outlined"
                 onClick={() => {
                   if (email && activeRoomID) {
+                    changeActiveRoom(null);
                     const msg: msg = {
                       from: email,
                       to: "N/A",
@@ -217,8 +218,6 @@ export default function Chat() {
                     };
 
                     dispatch(action);
-                  } else {
-                    console.log("err");
                   }
                 }}>
                 Leave Current Room
@@ -228,7 +227,7 @@ export default function Chat() {
 
           <div className={classes.flexv}>
             <div className={classes.chat_history}>
-              {activeRoomID ? (
+              {activeRoomID != null ? (
                 allRooms[activeRoomID].history.map((entry, idx) => {
                   let from = entry.from;
                   let type = entry.type;
@@ -284,7 +283,7 @@ export default function Chat() {
               ) : (
                 <Paper className={classes.arriving_message}>
                   <Typography variant="h4" className={classes.chat_text}>
-                    No group exists. Add one!
+                    Select a room from the left.
                   </Typography>
                 </Paper>
               )}
