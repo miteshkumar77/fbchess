@@ -113,6 +113,29 @@ export const userDisconnect = (userID: string) => {
   }
 };
 
+export const getUsersRooms = (userID: string) => {
+  if (!(userID in usersDB)) {
+    return { error: `user ${userID} does not exist.` };
+  }
+
+  if (!(userID in loadedUsers)) {
+    return { error: `user ${userID} has not been loaded.` };
+  }
+
+  let retVal: roomStoreType = {};
+  loadedUsers[userID].rooms.forEach((roomID) => {
+    if (!(roomID in roomsDB)) {
+      return { error: `room ${roomID} does not exist.` };
+    }
+
+    if (!(roomID in loadedRooms)) {
+      return { error: `room ${roomID} has not been loaded` };
+    }
+    retVal[roomID] = loadedRooms[roomID];
+  });
+  return retVal;
+};
+
 export const saveMsg = (userID: string, roomID: string, msg: string) => {
   if (!(userID in usersDB)) {
     return { error: `user ${userID} does not exist.` };
@@ -165,6 +188,9 @@ export const userCreateNewRoom = (userID: string) => {
   } else if (userError) {
     return { userError: userError };
   }
+
+  let retVal = response.updatedRoom;
+  return { newID: id, newRoom: retVal };
 };
 
 const loadUser = (userID: string) => {
@@ -292,9 +318,14 @@ export const userJoinRoom = (userID: string, roomID: string) => {
 
   if (getRoomPlayerByString(loadedRooms[roomID], "playerBlack") == "") {
     loadedRooms[roomID].playerBlack = userID;
+    console.log(loadedRooms[roomID]);
   } else {
     loadedRooms[roomID].playerWhite = userID;
+    console.log(loadedRooms[roomID]);
   }
+  loadedUsers[userID].rooms.push(roomID);
+
+  return { updatedRoom: loadedRooms[roomID] };
 };
 
 export const userLeaveRoom = (userID: string, roomID: string) => {

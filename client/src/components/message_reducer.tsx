@@ -1,14 +1,19 @@
 import React from "react";
-import { board_default } from "../components/board_formulas";
-import { getCurrentUser } from "../helpers/auth";
 import io from "socket.io-client";
-import { stringify } from "querystring";
+import { getCurrentUser } from "../helpers/auth";
+let email: string | null | undefined;
 
 export interface msg {
   from: string;
   to: string;
   type: string;
   msg: string;
+}
+
+export interface roomType {
+  playerBlack: string;
+  playerWhite: string;
+  history: Array<msg>;
 }
 
 export interface rooms {
@@ -37,62 +42,62 @@ export interface initializeType {
 }
 
 let socket: SocketIOClient.Socket;
-const initState: rooms = {
-  room1: {
-    playerBlack: "friend",
-    playerWhite: "miteshkumarca@gmail.com",
-    history: [
-      {
-        from: "friend",
-        to: "miteshkumarca@gmail.com",
-        type: "msg",
-        msg: "gm",
-      },
-      {
-        from: "friend",
-        to: "miteshkumarca@gmail.com",
-        type: "msg",
-        msg: "gm",
-      },
-      {
-        from: "miteshkumarca@gmail.com",
-        to: "friend",
-        type: "msg",
-        msg: "hi",
-      },
-      {
-        from: "system",
-        to: "friend",
-        type: "board",
-        msg: board_default.toString(),
-      },
-    ],
-  },
-  room2: {
-    playerWhite: "friend",
-    playerBlack: "miteshkumarca@gmail.com",
-    history: [
-      {
-        from: "friend",
-        to: "miteshkumarca@gmail.com",
-        type: "msg",
-        msg: "gm",
-      },
-      {
-        from: "friend",
-        to: "miteshkumarca@gmail.com",
-        type: "msg",
-        msg: "gm",
-      },
-      {
-        from: "miteshkumarca@gmail.com",
-        to: "friend",
-        type: "msg",
-        msg: "hi",
-      },
-    ],
-  },
-};
+// const initState: rooms = {
+//   room1: {
+//     playerBlack: "friend",
+//     playerWhite: "miteshkumarca@gmail.com",
+//     history: [
+//       {
+//         from: "friend",
+//         to: "miteshkumarca@gmail.com",
+//         type: "msg",
+//         msg: "gm",
+//       },
+//       {
+//         from: "friend",
+//         to: "miteshkumarca@gmail.com",
+//         type: "msg",
+//         msg: "gm",
+//       },
+//       {
+//         from: "miteshkumarca@gmail.com",
+//         to: "friend",
+//         type: "msg",
+//         msg: "hi",
+//       },
+//       {
+//         from: "system",
+//         to: "friend",
+//         type: "board",
+//         msg: board_default.toString(),
+//       },
+//     ],
+//   },
+//   room2: {
+//     playerWhite: "friend",
+//     playerBlack: "miteshkumarca@gmail.com",
+//     history: [
+//       {
+//         from: "friend",
+//         to: "miteshkumarca@gmail.com",
+//         type: "msg",
+//         msg: "gm",
+//       },
+//       {
+//         from: "friend",
+//         to: "miteshkumarca@gmail.com",
+//         type: "msg",
+//         msg: "gm",
+//       },
+//       {
+//         from: "miteshkumarca@gmail.com",
+//         to: "friend",
+//         type: "msg",
+//         msg: "hi",
+//       },
+//     ],
+//   },
+// };
 
 interface IContextProps {
   state: rooms;
@@ -121,9 +126,20 @@ function reducer(state: rooms, action: actionType | initializeType) {
       console.log("LEAVE_CURRENT_ROOM");
       return state;
     case "JOIN_EXISTING_ROOM":
+      socket.emit(
+        "join_room",
+        email,
+        action.payload.roomID,
+        ({ error }: { error: string }) => {
+          if (error) {
+            alert(error);
+          }
+        }
+      );
       return state;
     case "NEW_ROOM":
-      console.log("NEW_ROOM");
+      console.log("NEW ROOM");
+      socket.emit("new_room", email);
       return state;
     case "INIT_CTX":
       console.log("INIT_CTX");
@@ -134,8 +150,7 @@ function reducer(state: rooms, action: actionType | initializeType) {
 }
 
 export function Store(props: any) {
-  const email = getCurrentUser()?.email;
-
+  email = getCurrentUser()?.email;
   let loadedinitstate: rooms = {};
 
   const [rooms, dispatch] = React.useReducer(reducer, loadedinitstate);
@@ -177,6 +192,26 @@ export function Store(props: any) {
         payload: {
           msg: message,
           roomID: roomID,
+        },
+      };
+
+      dispatch(action);
+    });
+
+    socket.on("incoming_room", (newRooms: rooms) => {
+      console.log("ROOM ADDED: ");
+      console.log(newRooms);
+      let action: initializeType = {
+        type: "INIT_CTX",
+        payload: {
+          loadRooms: newRooms,
+          msg: {
+            from: "",
+            to: "",
+            msg: "",
+            type: "",
+          },
+          roomID: "",
         },
       };
 

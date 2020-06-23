@@ -1,5 +1,4 @@
-import React, { Component } from "react";
-import { LogoutButton } from "../components/navigation";
+import React from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
 import Typography from "@material-ui/core/Typography";
@@ -7,7 +6,7 @@ import { getCurrentUser } from "../helpers/auth";
 import { BoardSVG } from "../components/svggen";
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
-import { CTX, initializeType } from "../components/message_reducer";
+import { CTX } from "../components/message_reducer";
 import { msg, rooms, actionType } from "../components/message_reducer";
 import PrivateHeader from "../components/privateHeader";
 
@@ -88,7 +87,7 @@ export default function Chat() {
   allRooms = useCTX.state;
   const default_room = () => {
     const okeys = Object.keys(allRooms);
-    if (okeys.length == 0) {
+    if (okeys.length === 0) {
       return null;
     } else {
       return okeys[0];
@@ -106,7 +105,7 @@ export default function Chat() {
         <div className={classes.flexh}>
           <div className={classes.flexv}>
             <div className={classes.chat_list}>
-              {Object.keys(allRooms).length != 0 ? (
+              {Object.keys(allRooms).length !== 0 ? (
                 Object.keys(allRooms).map((roomID, idx) => {
                   const room = allRooms[roomID];
 
@@ -116,7 +115,7 @@ export default function Chat() {
                       key={idx}
                       value={roomID}
                       variant="contained"
-                      color={activeRoomID == roomID ? "secondary" : undefined}
+                      color={activeRoomID === roomID ? "secondary" : undefined}
                       onClick={(e) => {
                         changeActiveRoom(e.currentTarget.value);
                       }}>
@@ -234,8 +233,8 @@ export default function Chat() {
                   let from = entry.from;
                   let type = entry.type;
                   let msg = entry.msg;
-                  if (type == "msg") {
-                    if (from == email) {
+                  if (type === "msg") {
+                    if (from === email) {
                       return (
                         <Paper key={idx} className={classes.leaving_message}>
                           <Typography
@@ -266,13 +265,13 @@ export default function Chat() {
                         </Paper>
                       );
                     }
-                  } else if (type == "board") {
+                  } else if (type === "board") {
                     return (
                       <Paper key={idx} className={classes.system_message}>
                         <Typography variant="h4">system</Typography>
                         <BoardSVG
                           player={
-                            allRooms[activeRoomID].playerWhite == email
+                            allRooms[activeRoomID].playerWhite === email
                               ? "W"
                               : "B"
                           }
@@ -302,11 +301,11 @@ export default function Chat() {
                 />
                 <Button
                   onClick={() => {
-                    if (activeRoomID && email && textValue != "") {
+                    if (activeRoomID && email && textValue !== "") {
                       const send_val: msg = {
                         from: email,
                         to:
-                          allRooms[activeRoomID].playerBlack == email
+                          allRooms[activeRoomID].playerBlack === email
                             ? allRooms[activeRoomID].playerWhite
                             : allRooms[activeRoomID].playerBlack,
                         type: "msg",
