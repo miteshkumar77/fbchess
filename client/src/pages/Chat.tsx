@@ -183,6 +183,7 @@ export default function Chat() {
                       };
 
                       dispatch(action);
+                      changeAddRoomValue("");
                     }
                   }}>
                   Join
@@ -276,6 +277,15 @@ export default function Chat() {
                           }
                           data={msg.split(",")}
                         />
+                      </Paper>
+                    );
+                  } else if (type === "system_msg") {
+                    return (
+                      <Paper key={idx} className={classes.system_message}>
+                        <Typography variant="h4">system</Typography>
+                        <Typography variant="h6" className={classes.chat_text}>
+                          {msg}
+                        </Typography>
                       </Paper>
                     );
                   }

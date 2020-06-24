@@ -7,7 +7,7 @@ import express from "express";
 import socketio from "socket.io";
 import http from "http";
 import router from "./router";
-
+import { getGameCmd } from "./game";
 import {
   saveMsg,
   userConnect,
@@ -19,6 +19,8 @@ import {
   msgType,
   getUsersRooms,
   getRoomPlayers,
+  getRoomGame,
+  saveSystemMessage,
 } from "./crud";
 
 interface userSocketMapType {
@@ -53,11 +55,30 @@ io.on("connection", (socket) => {
     callback({ hist: response.roomsList });
   });
 
+  // "@fbchess"
   socket.on("outbound_message", (roomID: string, message: msgType) => {
     console.log("Message received: ");
     console.log(message);
     saveMsg(message.from, roomID, message.msg);
     io.in(roomID).emit("message", roomID, message);
+    // console.log(message.msg.substring(0, 10));
+    if (message.msg.length > 9 && message.msg.substring(0, 9) === "@fbchess ") {
+      console.log("MOVE TRIGGERED: " + message.msg);
+      const roomPlayers = getRoomPlayers(roomID);
+      const pW = roomPlayers.playerWhite ? roomPlayers.playerWhite : "";
+      const pB = roomPlayers.playerBlack ? roomPlayers.playerBlack : "";
+      console.log("MOVE: |" + message.msg.substring(9));
+      const systemMsg = getGameCmd(
+        getRoomGame(roomID),
+        message.from,
+        pW,
+        pB,
+        message.msg.substring(9)
+      );
+      console.log(systemMsg);
+      saveSystemMessage(roomID, systemMsg);
+      io.to(roomID).emit("message", roomID, systemMsg);
+    }
   });
   socket.on("deinitialize", (email: string, callback) => {
     console.log(`Disconnecting user ${email}.`);

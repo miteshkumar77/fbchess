@@ -42,62 +42,6 @@ export interface initializeType {
 }
 
 let socket: SocketIOClient.Socket;
-// const initState: rooms = {
-//   room1: {
-//     playerBlack: "friend",
-//     playerWhite: "miteshkumarca@gmail.com",
-//     history: [
-//       {
-//         from: "friend",
-//         to: "miteshkumarca@gmail.com",
-//         type: "msg",
-//         msg: "gm",
-//       },
-//       {
-//         from: "friend",
-//         to: "miteshkumarca@gmail.com",
-//         type: "msg",
-//         msg: "gm",
-//       },
-//       {
-//         from: "miteshkumarca@gmail.com",
-//         to: "friend",
-//         type: "msg",
-//         msg: "hi",
-//       },
-//       {
-//         from: "system",
-//         to: "friend",
-//         type: "board",
-//         msg: board_default.toString(),
-//       },
-//     ],
-//   },
-//   room2: {
-//     playerWhite: "friend",
-//     playerBlack: "miteshkumarca@gmail.com",
-//     history: [
-//       {
-//         from: "friend",
-//         to: "miteshkumarca@gmail.com",
-//         type: "msg",
-//         msg: "gm",
-//       },
-//       {
-//         from: "friend",
-//         to: "miteshkumarca@gmail.com",
-//         type: "msg",
-//         msg: "gm",
-//       },
-//       {
-//         from: "miteshkumarca@gmail.com",
-//         to: "friend",
-//         type: "msg",
-//         msg: "hi",
-//       },
-//     ],
-//   },
-// };
 
 interface IContextProps {
   state: rooms;

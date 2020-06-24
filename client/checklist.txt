@@ -5,6 +5,4 @@
  - Save sent and received messages to cloud firestore, also display as incoming message in UI 
  - Load existing messages from cloud fire store upon log in
 
-
-
 - Cloud firestore to save session. Save data before sending over socket.io connection. 

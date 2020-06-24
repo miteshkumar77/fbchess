@@ -1,5 +1,5 @@
-import React, { Component } from "react";
-import { makeStyles, rgbToHex } from "@material-ui/core/styles";
+import React from "react";
+import { makeStyles } from "@material-ui/core/styles";
 import blackPawn from "../pieces/black-pawn.png";
 import blackBishop from "../pieces/black-bishop.png";
 import blackRook from "../pieces/black-rook.png";
@@ -79,7 +79,7 @@ const Square: React.FC<SquareData> = ({ shaded, piece }) => {
   const classes = useStyles();
   return (
     <div className={shaded ? classes.black_square : classes.white_square}>
-      {piece_map[piece] ? <img src={piece_map[piece]} /> : null}
+      {piece_map[piece] ? <img src={piece_map[piece]} alt="" /> : null}
     </div>
   );
 };
@@ -91,7 +91,7 @@ interface BoardData {
 
 export const BoardSVG: React.FC<BoardData> = ({ player, data }) => {
   const classes = useStyles();
-  if (player === "B") {
+  if (player === "W") {
     let k = -1;
     let shade = false;
     return (
