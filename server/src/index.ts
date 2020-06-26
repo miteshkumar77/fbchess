@@ -1,8 +1,5 @@
+// Imports
 import * as dotenv from "dotenv";
-dotenv.config();
-const db_connection_string = process.env.DATABASE;
-const PORT: string | number = process.env.PORT || 4000;
-let error;
 import express from "express";
 import socketio from "socket.io";
 import http from "http";
@@ -21,7 +18,22 @@ import {
   getRoomPlayers,
   getRoomGame,
   saveSystemMessage,
+  userConnect_R,
+  userDisconnect_R,
+  userCreateNewRoom_R,
 } from "./crud";
+import { exit } from "process";
+import { connect } from "mongoose";
+
+// .env read
+dotenv.config();
+const db_connection_string = process.env.DATABASE;
+if (!db_connection_string) {
+  console.error("No Database Connection String. Exiting...");
+  exit();
+}
+const PORT: string | number = process.env.PORT || 4000;
+let error;
 
 interface userSocketMapType {
   [userID: string]: string;
@@ -35,39 +47,52 @@ const io = socketio(server);
 app.use(router);
 
 io.on("connection", (socket) => {
-  // console.log("A user connected.");
+  // socket.on("initialize", (email: string, callback) => {
+  //   //console.log(`Connecting user ${email}.`);
+  //   error = userConnect(email)?.error;
+  //   if (error) {
+  //     callback({ error: error });
+  //     return;
+  //   }
 
-  socket.on("initialize", (email: string, callback) => {
+  //   let response = getMessageHist(email);
+  //   //console.log(response.roomsList);
+  //   userSocket[email] = socket.id;
+
+  //   if (response.roomsList) {
+  //     socket.join(Object.keys(response.roomsList));
+  //     //console.log(Object.keys(response.roomsList));
+  //   }
+  //   callback({ hist: response.roomsList });
+  // });
+
+  socket.on("initialize", async (email: string, callback) => {
     console.log(`Connecting user ${email}.`);
-    error = userConnect(email)?.error;
-    if (error) {
-      callback({ error: error });
-      return;
-    }
+    userConnect_R(email).then(() => {
+      let response = getMessageHist(email);
+      //console.log("response: ");
+      //console.log(response);
+      userSocket[email] = socket.id;
 
-    let response = getMessageHist(email);
-    console.log(response.roomsList);
-    userSocket[email] = socket.id;
-    if (response.roomsList) {
-      socket.join(Object.keys(response.roomsList));
-      console.log(Object.keys(response.roomsList));
-    }
-    callback({ hist: response.roomsList });
+      if (response.roomsList) {
+        socket.join(Object.keys(response.roomsList));
+        //console.log(Object.keys(response.roomsList));
+        callback({ hist: response.roomsList });
+      }
+    });
   });
 
-  // "@fbchess"
   socket.on("outbound_message", (roomID: string, message: msgType) => {
-    console.log("Message received: ");
-    console.log(message);
+    //console.log("Message received: ");
+    //console.log(message);
     saveMsg(message.from, roomID, message.msg);
     io.in(roomID).emit("message", roomID, message);
-    // console.log(message.msg.substring(0, 10));
     if (message.msg.length > 9 && message.msg.substring(0, 9) === "@fbchess ") {
-      console.log("MOVE TRIGGERED: " + message.msg);
+      //console.log("MOVE TRIGGERED: " + message.msg);
       const roomPlayers = getRoomPlayers(roomID);
       const pW = roomPlayers.playerWhite ? roomPlayers.playerWhite : "";
       const pB = roomPlayers.playerBlack ? roomPlayers.playerBlack : "";
-      console.log("MOVE: |" + message.msg.substring(9));
+      //console.log("MOVE: |" + message.msg.substring(9));
       const systemMsg = getGameCmd(
         getRoomGame(roomID),
         message.from,
@@ -75,16 +100,24 @@ io.on("connection", (socket) => {
         pB,
         message.msg.substring(9)
       );
-      console.log(systemMsg);
+      //console.log(systemMsg);
       saveSystemMessage(roomID, systemMsg);
       io.to(roomID).emit("message", roomID, systemMsg);
     }
   });
-  socket.on("deinitialize", (email: string, callback) => {
+
+  // socket.on("deinitialize", (email: string, callback) => {
+  //   //console.log(`Disconnecting user ${email}.`);
+  //   delete userSocket[email];
+  //   socket.leaveAll();
+  //   userDisconnect(email);
+  //   callback();
+  // });
+  socket.on("deinitialize", async (email: string, callback) => {
     console.log(`Disconnecting user ${email}.`);
     delete userSocket[email];
     socket.leaveAll();
-    userDisconnect(email);
+    userDisconnect_R(email);
     callback();
   });
 
@@ -160,24 +193,42 @@ io.on("connection", (socket) => {
       }
     }
   );
+  // socket.on(
+  //   "new_room",
+  //   (userID: string, callback: ({ error }: { error: string }) => void) => {
+  //     let result = userCreateNewRoom(userID);
+  //     let error = result.error;
+  //     let userError = result.userError;
+  //     if (error) {
+  //       callback({ error: error });
+  //       return;
+  //     } else if (userError) {
+  //       callback({ error: userError });
+  //       return;
+  //     }
+  //     if (result.newID) {
+  //       socket.join(result.newID);
+  //       //console.log(getUsersRooms(userID));
+  //       io.to(userSocket[userID]).emit("incoming_room", getUsersRooms(userID));
+  //     }
+  //   }
+  // );
+
   socket.on(
     "new_room",
     (userID: string, callback: ({ error }: { error: string }) => void) => {
-      let result = userCreateNewRoom(userID);
-      let error = result.error;
-      let userError = result.userError;
-      if (error) {
-        callback({ error: error });
-        return;
-      } else if (userError) {
-        callback({ error: userError });
-        return;
-      }
-      if (result.newID) {
-        socket.join(result.newID);
-        console.log(getUsersRooms(userID));
-        io.to(userSocket[userID]).emit("incoming_room", getUsersRooms(userID));
-      }
+      userCreateNewRoom_R(userID).then((result) => {
+        // console.log("Result: ");
+        // console.log(result);
+        if (result.newID) {
+          socket.join(result.newID);
+          //console.log(getUsersRooms(userID));
+          io.to(userSocket[userID]).emit(
+            "incoming_room",
+            getUsersRooms(userID)
+          );
+        }
+      });
     }
   );
 
@@ -186,6 +237,15 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
-});
+(async () => {
+  await connect(
+    db_connection_string,
+    { useNewUrlParser: true, useUnifiedTopology: true },
+    () => {
+      console.log("Database is connected.");
+      server.listen(PORT, () => {
+        console.log(`Server started on port ${PORT}`);
+      });
+    }
+  );
+})();

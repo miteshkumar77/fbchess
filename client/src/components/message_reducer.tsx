@@ -118,6 +118,7 @@ export function Store(props: any) {
         if (response.error) {
           alert(response.error);
         } else {
+          console.log(response.hist);
           const action: initializeType = {
             type: "INIT_CTX",
             payload: {
