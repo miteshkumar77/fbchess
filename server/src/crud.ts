@@ -2,13 +2,19 @@ import { nanoid } from "nanoid";
 import { Chess, ChessInstance } from "chess.js";
 import { board_default } from "./board_formulas";
 import {
-  Message,
-  messageModel,
-  roomModel,
-  userModel,
-  Room,
   User,
+  IMessage,
+  IRoom,
+  IUser,
+  MessageSchema,
+  Room,
+  RoomSchema,
+  UserSchema,
+  findOrCreateUser,
+  Message,
+  createNewRoom,
 } from "./models";
+import { realpathSync } from "fs";
 
 const newGameFEN: string =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -73,71 +79,46 @@ export const userConnect = (userID: string) => {
   }
 };
 
-// export const userConnect_R = async (userID: string) => {
-//   let user = await userModel.findByIdAndUpdate(
-//     userID,
-//     { upsert: true },
-//     (err, doc) => {
-//       if (err) {
-//         console.error(err);
-//       }
-//       if (doc) {
-//         loadedUsers[userID] = {
-//           rooms: doc.rooms,
-//         };
-//       }
-//     }
-//   );
-//   if (!user) {
-//     return;
-//   }
-//   return Promise.all(
-//     user.rooms.map((roomID) => {
-//       if (!(roomID in loadedRooms)) {
-//         return roomModel.findById(roomID, (err, doc) => {
-//           if (doc) {
-//             loadedRooms[roomID] = {
-//               currentGameState: getRoomGame(doc.currentGameStateFEN),
-//               history: doc.history,
-//               playerBlack: doc.playerBlack,
-//               playerWhite: doc.playerWhite,
-//             };
-//           }
-//         });
-//       }
-//     })
-//   );
-// };
-
-export const userConnect_R = async (userID: string) => {
-  if (userID in loadedRooms) {
+/**
+ *
+ * @param userID user email
+ * @effects loads user's data as well as the rooms that the user is part of
+ *          if they have not been loaded already from the database, into memory.
+ *
+ */
+export const userConnect_R = async (userID: string, callback: any) => {
+  if (userID in loadedUsers) {
+    callback();
     return;
-  }
-  let user = await userModel.findOne({ userID: userID });
-  if (!user) {
-    user = await userModel.create({ userID: userID, rooms: Array<string>() });
-  }
-  if (user) {
-    loadedUsers[userID] = {
-      rooms: user.rooms.map((roomID) => roomID[0]),
-    };
-    await Promise.all(
-      user.rooms.map((roomID) => {
-        if (!(roomID in loadedRooms)) {
-          return roomModel.findOne({ roomID: roomID }, (err, doc) => {
-            if (doc) {
-              loadedRooms[roomID] = {
-                currentGameState: getRoomGame(doc.currentGameStateFEN),
-                history: doc.history,
-                playerBlack: doc.playerBlack,
-                playerWhite: doc.playerWhite,
-              };
-            }
-          });
+  } else {
+    let user = await findOrCreateUser(userID);
+    if (user) {
+      loadedUsers[user.userID] = {
+        rooms: user.rooms,
+      };
+
+      let newRooms = await Promise.all(
+        loadedUsers[user.userID].rooms.map((roomID) => {
+          if (!(roomID in loadedRooms)) {
+            return Room.findOne({ roomID: roomID });
+          }
+        })
+      );
+
+      newRooms.forEach((res) => {
+        if (res) {
+          loadedRooms[res.roomID] = {
+            currentGameState: new Chess(res.currentGameStateFEN),
+            playerBlack: res.playerBlack,
+            playerWhite: res.playerWhite,
+            history: res.history,
+          };
         }
-      })
-    );
+      });
+    }
   }
+
+  callback();
 };
 
 export const getMessageHist = (userID: string) => {
@@ -171,19 +152,62 @@ export const userDisconnect = (userID: string) => {
   }
 };
 
+/**
+ *
+ * @param userID user's email
+ * @effects Unloads any rooms that have both users disconnected and
+ * then unloads the user's current data into the database.
+ */
 export const userDisconnect_R = async (userID: string) => {
-  await Promise.all(
-    loadedUsers[userID].rooms.map((roomID) => {
-      if (
-        loadedRooms[roomID].playerBlack == "" ||
-        loadedRooms[roomID].playerWhite == ""
-      ) {
-        return unloadRoom_R(roomID);
-      }
-    })
-  );
+  // unload all rooms that will have 0 connected users.
+  try {
+    await Promise.all(
+      loadedUsers[userID].rooms.map((roomID) => {
+        if (
+          !(loadedRooms[roomID].playerBlack in loadedRooms[roomID]) ||
+          !(loadedRooms[roomID].playerWhite in loadedRooms[roomID])
+        ) {
+          return Room.findOneAndUpdate(
+            { roomID: roomID },
+            {
+              $set: {
+                playerBlack: loadedRooms[roomID].playerBlack,
+                playerWhite: loadedRooms[roomID].playerWhite,
+                currentGameStateFEN: loadedRooms[roomID].currentGameState.fen(),
+                history: loadedRooms[roomID].history.map((msg: msgType) => {
+                  return new Message({
+                    to: msg.to,
+                    from: msg.from,
+                    msg: msg.msg,
+                    type: msg.type,
+                  });
+                }),
+              },
+            },
+            () => {
+              delete loadedRooms[roomID];
+            }
+          );
+        }
+      })
+    );
+  } catch (err) {
+    console.error(err);
+  }
 
-  await unloadUser_R(userID);
+  // unload the disconnecting user's data
+  try {
+    User.findOneAndUpdate(
+      { userID: userID },
+      { $set: { rooms: loadedUsers[userID].rooms } },
+      () => {
+        delete loadedUsers[userID];
+      }
+    );
+  } catch (err) {
+    console.error(err);
+    return;
+  }
 };
 
 export const getUsersRooms = (userID: string) => {
@@ -197,13 +221,13 @@ export const getUsersRooms = (userID: string) => {
 
   let retVal: roomCacheType = {};
   loadedUsers[userID].rooms.forEach((roomID) => {
-    if (!(roomID in roomsDB)) {
-      return { error: `room ${roomID} does not exist.` };
-    }
+    // if (!(roomID in roomsDB)) {
+    //   return { error: `room ${roomID} does not exist.` };
+    // }
 
-    if (!(roomID in loadedRooms)) {
-      return { error: `room ${roomID} has not been loaded` };
-    }
+    // if (!(roomID in loadedRooms)) {
+    //   return { error: `room ${roomID} has not been loaded` };
+    // }
     retVal[roomID] = loadedRooms[roomID];
   });
   return retVal;
@@ -262,10 +286,6 @@ const createUserInDB = (userID: string) => {
   }
 };
 
-const createUserInDB_R = async (userID: string) => {
-  return userModel.create({ userID: userID } as User);
-};
-
 export const userCreateNewRoom = (userID: string) => {
   const id = createRoomInDB();
   let err = loadRoom(id)?.error;
@@ -285,24 +305,27 @@ export const userCreateNewRoom = (userID: string) => {
   return { newID: id, newRoom: retVal };
 };
 
+/**
+ *
+ * @param userID user's email
+ * @effects creates a new room in the database, loads the room into memory, and joins the user to the room.
+ * @returns new ID and new room instance.
+ */
 export const userCreateNewRoom_R = async (userID: string) => {
-  const roomID = await createRoomInDB_R();
-
-  let response = userJoinRoom(userID, roomID);
-  let error = response?.error;
-  let userError = response?.userError;
-  if (error) {
-    console.log(error);
-    return { error: error };
-  } else if (userError) {
-    console.log(userError);
-    return { userError: userError };
+  let newRoom = await createNewRoom();
+  if (!newRoom) {
+    return;
   }
-  console.log("join room response: ");
-  // console.log(response);
-  console.log(loadedUsers[userID]);
-  let retVal = response.updatedRoom;
-  return { newID: roomID, newRoom: retVal };
+  const id = newRoom.roomID;
+  loadedRooms[id] = {
+    currentGameState: new Chess(newRoom.currentGameStateFEN),
+    history: newRoom.history,
+    playerBlack: newRoom.playerBlack,
+    playerWhite: newRoom.playerWhite,
+  };
+  userJoinRoom(userID, id);
+
+  return { newRoomID: id, newRoom: loadedRooms[id] };
 };
 
 const loadUser = (userID: string) => {
@@ -311,22 +334,6 @@ const loadUser = (userID: string) => {
       return { error: `user ${userID} doesn't exist.` };
     }
     loadedUsers[userID] = usersDB[userID];
-  }
-};
-
-const loadUser_R = async (userID: string) => {
-  if (!(userID in loadedUsers)) {
-    return userModel.findById(userID, (err, doc) => {
-      if (err) {
-        console.error(err);
-      }
-
-      if (doc) {
-        loadedUsers[userID] = {
-          rooms: doc.rooms,
-        };
-      }
-    });
   }
 };
 
@@ -351,30 +358,6 @@ const createRoomInDB = () => {
   };
 
   return id;
-};
-
-const createRoomInDB_R = async () => {
-  const newRoom = await roomModel.create({
-    currentGameStateFEN: newGameFEN,
-    playerBlack: "",
-    playerWhite: "",
-  } as Room);
-  loadedRooms[newRoom.roomID] = {
-    currentGameState: Chess(newRoom.currentGameStateFEN),
-    history: [
-      {
-        from: "",
-        to: "",
-        msg: board_default.toString(),
-        type: "board",
-      },
-    ],
-    playerBlack: newRoom.playerBlack,
-    playerWhite: newRoom.playerWhite,
-  };
-  console.log("New ID: ");
-  console.log(newRoom.roomID);
-  return newRoom.roomID;
 };
 
 const loadRoom = (roomID: string) => {
@@ -427,8 +410,8 @@ const unloadUsersRooms = (userID: string) => {
 
   loadedUsers[userID].rooms.forEach((roomID) => {
     if (
-      loadedRooms[roomID].playerBlack == "" ||
-      loadedRooms[roomID].playerWhite == ""
+      !(loadedRooms[roomID].playerBlack in loadedUsers) ||
+      !(loadedRooms[roomID].playerWhite in loadedUsers)
     ) {
       let error = unloadRoom(roomID)?.error;
       if (error) {
@@ -437,6 +420,7 @@ const unloadUsersRooms = (userID: string) => {
     }
   });
 };
+
 const getRoomPlayerByString = (room: cachedRoomType, playerColor: string) => {
   if (playerColor == "playerBlack") {
     return room.playerBlack;
@@ -537,41 +521,30 @@ export const userLeaveRoom = (userID: string, roomID: string) => {
   }
 };
 
-export const userLeaveRoom_R = (userID: string, roomID: string) => {
-  // if (!(userID in usersDB)) {
-  //   return { error: `user ${userID} does not exist.` };
-  // }
-
-  if (!(userID in loadedUsers)) {
-    return { error: `user ${userID} has not been loaded.` };
-  }
-
-  // if (!(roomID in roomsDB)) {
-  //   return { error: `room ${roomID} does not exist.` };
-  // }
-
-  if (!(roomID in loadedRooms)) {
-    return { error: `room ${roomID} has not been loaded` };
-  }
-
+/**
+ *
+ * @param userID user's email
+ * @param roomID room's unique ID
+ * @effects removes user's name from room, if both users have left the room,
+ * the room is deleted from both the database and memory.
+ */
+export const userLeaveRoom_R = async (userID: string, roomID: string) => {
   if (loadedRooms[roomID].playerBlack == userID) {
     loadedRooms[roomID].playerBlack = "";
   } else if (loadedRooms[roomID].playerWhite == userID) {
     loadedRooms[roomID].playerWhite = "";
-  } else {
-    return {
-      error: `room ${roomID} does not have user a ${userID} to remove.`,
-    };
   }
-  // delete particular room from user's cached room list.
   loadedUsers[userID].rooms = loadedUsers[userID].rooms.filter(
     (userRoomID) => userRoomID != roomID
   );
+
   if (
     loadedRooms[roomID].playerBlack == "" &&
     loadedRooms[roomID].playerWhite == ""
   ) {
-    disbandRoom_R(roomID)?.error;
+    Room.findOneAndDelete({ roomID: roomID }, () => {
+      delete loadedRooms[roomID];
+    });
   }
 };
 
@@ -595,11 +568,6 @@ const disbandRoom = (roomID: string) => {
   }
 };
 
-const disbandRoom_R = (roomID: string) => {
-  delete loadedRooms[roomID];
-  return roomModel.findByIdAndDelete(roomID);
-};
-
 const unloadRoom = (roomID: string) => {
   if (!(roomID in roomsDB)) {
     return { error: `room ${roomID} does not exist.` };
@@ -619,27 +587,6 @@ const unloadRoom = (roomID: string) => {
   delete loadedRooms[roomID];
 };
 
-const unloadRoom_R = async (roomID: string) => {
-  const cachedEntry = loadedRooms[roomID];
-  delete loadedRooms[roomID];
-  //console.log("Cached Entry: ");
-  //console.log(cachedEntry);
-  return roomModel.findOneAndUpdate(
-    { roomID: roomID },
-    (err: any, doc: Room) => {
-      if (err) {
-        console.error(err);
-      } else if (doc) {
-        (doc.playerBlack = cachedEntry.playerBlack),
-          (doc.playerWhite = cachedEntry.playerWhite),
-          (doc.currentGameStateFEN = cachedEntry.currentGameState.fen());
-        // @ts-ignore
-        doc.save();
-      }
-    }
-  );
-};
-
 const unloadUser = (userID: string) => {
   if (!(userID in usersDB)) {
     return { error: `user ${userID} does not exist.` };
@@ -653,33 +600,7 @@ const unloadUser = (userID: string) => {
   delete loadedUsers[userID];
 };
 
-const unloadUser_R = (userID: string) => {
-  // if (!(userID in usersDB)) {
-  //   return { error: `user ${userID} does not exist.` };
-  // }
-
-  // if (!(userID in loadedUsers)) {
-  //   return { error: `user ${userID} has not been loaded.` };
-  // }
-  console.log(`user id: ${userID}: `);
-  console.log(loadedUsers[userID]);
-  return userModel.findOneAndUpdate(
-    { userID: userID },
-    {
-      rooms: loadedUsers[userID].rooms,
-    },
-    // @ts-ignore
-    { overwrite: true },
-    () => {
-      delete loadedUsers[userID];
-    }
-  );
-};
 export const getRoomPlayers = (roomID: string) => {
-  if (!(roomID in roomsDB)) {
-    return { error: `room ${roomID} does not exist.` };
-  }
-
   if (!(roomID in loadedRooms)) {
     return { error: `room ${roomID} has not been loaded` };
   }
