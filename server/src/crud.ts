@@ -1,73 +1,20 @@
 import { nanoid } from "nanoid";
-import { PassThrough } from "stream";
 import { Chess, ChessInstance } from "chess.js";
-
-const board_default: Array<string> = [
-  "14",
-  "13",
-  "15",
-  "11",
-  "12",
-  "15",
-  "13",
-  "14",
-  "16",
-  "16",
-  "16",
-  "16",
-  "16",
-  "16",
-  "16",
-  "16",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "22",
-  "22",
-  "22",
-  "22",
-  "22",
-  "22",
-  "22",
-  "22",
-  "20",
-  "19",
-  "21",
-  "17",
-  "18",
-  "21",
-  "19",
-  "20",
-];
+import { board_default } from "./board_formulas";
+import {
+  User,
+  IMessage,
+  IRoom,
+  IUser,
+  MessageSchema,
+  Room,
+  RoomSchema,
+  UserSchema,
+  findOrCreateUser,
+  Message,
+  createNewRoom,
+} from "./models";
+import { realpathSync } from "fs";
 
 const newGameFEN: string =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -106,61 +53,8 @@ interface databaseType {
   [roomID: string]: databaseRoomType;
 }
 
-// const me = "miteshkumarca@gmail.com";
-// const me2 = "kumarm4@rpi.edu"
-
-// const usersDB: userStoreType = {
-//   "miteshkumarca@gmail.com": {
-//     rooms: ["room1", "room2"],
-//   },
-//   "kumarm4@rpi.edu": {
-//     rooms: ["room1", "room2"],
-//   },
-// };
-
 const roomsDB: databaseType = {};
 const usersDB: userStoreType = {};
-// const roomsDB: databaseType = {
-//   room1: {
-//     playerBlack: "miteshkumarca@gmail.com",
-//     playerWhite: "kumarm4@rpi.edu",
-//     history: [
-//       {
-//         from: "",
-//         to: "",
-//         type: "board",
-//         msg: board_default.toString(),
-//       },
-//       {
-//         from: "miteshkumarca@gmail.com",
-//         to: "room1",
-//         type: "msg",
-//         msg: "HI GUY",
-//       },
-//     ],
-
-//     currentGameStateFEN: newGameFEN,
-//   },
-//   room2: {
-//     playerWhite: "miteshkumarca@gmail.com",
-//     playerBlack: "kumarm4@rpi.edu",
-//     history: [
-//       {
-//         from: "",
-//         to: "",
-//         type: "board",
-//         msg: board_default.toString(),
-//       },
-//       {
-//         from: "kumarm4@rpi.edu",
-//         to: "room1",
-//         type: "msg",
-//         msg: "HI GUY",
-//       },
-//     ],
-//     currentGameStateFEN: newGameFEN,
-//   },
-// };
 
 let loadedRooms: roomCacheType = {};
 let loadedUsers: userStoreType = {};
@@ -168,7 +62,7 @@ let loadedUsers: userStoreType = {};
 export const userConnect = (userID: string) => {
   let error;
   if (!(userID in usersDB)) {
-    console.log(`Adding user ${userID} to DB`);
+    //console.log(`Adding user ${userID} to DB`);
     error = createUserInDB(userID)?.error;
     if (error) {
       return { error: error };
@@ -185,14 +79,59 @@ export const userConnect = (userID: string) => {
   }
 };
 
-export const getMessageHist = (userID: string) => {
-  if (!(userID in usersDB)) {
-    return { error: `user ${userID} does not exist.` };
+/**
+ *
+ * @param userID user email
+ * @effects loads user's data as well as the rooms that the user is part of
+ *          if they have not been loaded already from the database, into memory.
+ *
+ */
+export const userConnect_R = async (userID: string, callback: any) => {
+  if (userID in loadedUsers) {
+    callback();
+    return;
+  } else {
+    let user = await findOrCreateUser(userID);
+    if (user) {
+      loadedUsers[user.userID] = {
+        rooms: user.rooms,
+      };
+
+      let newRooms = await Promise.all(
+        loadedUsers[user.userID].rooms.map((roomID) => {
+          if (!(roomID in loadedRooms)) {
+            return Room.findOne({ roomID: roomID });
+          }
+        })
+      );
+
+      newRooms.forEach((res) => {
+        if (res) {
+          loadedRooms[res.roomID] = {
+            currentGameState: new Chess(res.currentGameStateFEN),
+            playerBlack: res.playerBlack,
+            playerWhite: res.playerWhite,
+            history: res.history,
+          };
+        }
+      });
+    }
   }
+
+  callback();
+};
+
+export const getMessageHist = (userID: string) => {
+  // if (!(userID in usersDB)) {
+  //   return { error: `user ${userID} does not exist.` };
+  // }
 
   if (!(userID in loadedUsers)) {
     return { error: `user ${userID} has not been loaded.` };
   }
+
+  //console.log("User Loaded: ");
+  //console.log(loadedUsers[userID]);
 
   let returnval: roomCacheType = {};
   loadedUsers[userID].rooms.forEach((roomID) => {
@@ -200,6 +139,7 @@ export const getMessageHist = (userID: string) => {
   });
   return { roomsList: returnval };
 };
+
 export const userDisconnect = (userID: string) => {
   let error;
   error = unloadUsersRooms(userID)?.error;
@@ -212,10 +152,68 @@ export const userDisconnect = (userID: string) => {
   }
 };
 
-export const getUsersRooms = (userID: string) => {
-  if (!(userID in usersDB)) {
-    return { error: `user ${userID} does not exist.` };
+/**
+ *
+ * @param userID user's email
+ * @effects Unloads any rooms that have both users disconnected and
+ * then unloads the user's current data into the database.
+ */
+export const userDisconnect_R = async (userID: string) => {
+  // unload all rooms that will have 0 connected users.
+  try {
+    await Promise.all(
+      loadedUsers[userID].rooms.map((roomID) => {
+        if (
+          !(loadedRooms[roomID].playerBlack in loadedRooms[roomID]) ||
+          !(loadedRooms[roomID].playerWhite in loadedRooms[roomID])
+        ) {
+          return Room.findOneAndUpdate(
+            { roomID: roomID },
+            {
+              $set: {
+                playerBlack: loadedRooms[roomID].playerBlack,
+                playerWhite: loadedRooms[roomID].playerWhite,
+                currentGameStateFEN: loadedRooms[roomID].currentGameState.fen(),
+                history: loadedRooms[roomID].history.map((msg: msgType) => {
+                  return new Message({
+                    to: msg.to,
+                    from: msg.from,
+                    msg: msg.msg,
+                    type: msg.type,
+                  });
+                }),
+              },
+            },
+            () => {
+              delete loadedRooms[roomID];
+            }
+          );
+        }
+      })
+    );
+  } catch (err) {
+    console.error(err);
   }
+
+  // unload the disconnecting user's data
+  try {
+    User.findOneAndUpdate(
+      { userID: userID },
+      { $set: { rooms: loadedUsers[userID].rooms } },
+      () => {
+        delete loadedUsers[userID];
+      }
+    );
+  } catch (err) {
+    console.error(err);
+    return;
+  }
+};
+
+export const getUsersRooms = (userID: string) => {
+  // if (!(userID in usersDB)) {
+  //   return { error: `user ${userID} does not exist.` };
+  // }
 
   if (!(userID in loadedUsers)) {
     return { error: `user ${userID} has not been loaded.` };
@@ -223,13 +221,13 @@ export const getUsersRooms = (userID: string) => {
 
   let retVal: roomCacheType = {};
   loadedUsers[userID].rooms.forEach((roomID) => {
-    if (!(roomID in roomsDB)) {
-      return { error: `room ${roomID} does not exist.` };
-    }
+    // if (!(roomID in roomsDB)) {
+    //   return { error: `room ${roomID} does not exist.` };
+    // }
 
-    if (!(roomID in loadedRooms)) {
-      return { error: `room ${roomID} has not been loaded` };
-    }
+    // if (!(roomID in loadedRooms)) {
+    //   return { error: `room ${roomID} has not been loaded` };
+    // }
     retVal[roomID] = loadedRooms[roomID];
   });
   return retVal;
@@ -240,9 +238,9 @@ export const getRoomGame = (roomID: string) => {
 };
 
 export const saveSystemMessage = (roomID: string, msg: msgType) => {
-  if (!(roomID in roomsDB)) {
-    return { error: `room ${roomID} does not exist.` };
-  }
+  // if (!(roomID in roomsDB)) {
+  //   return { error: `room ${roomID} does not exist.` };
+  // }
 
   if (!(roomID in loadedRooms)) {
     return { error: `room ${roomID} has not been loaded` };
@@ -251,17 +249,17 @@ export const saveSystemMessage = (roomID: string, msg: msgType) => {
   loadedRooms[roomID].history.push(msg);
 };
 export const saveMsg = (userID: string, roomID: string, msg: string) => {
-  if (!(userID in usersDB)) {
-    return { error: `user ${userID} does not exist.` };
-  }
+  // if (!(userID in usersDB)) {
+  //   return { error: `user ${userID} does not exist.` };
+  // }
 
   if (!(userID in loadedUsers)) {
     return { error: `user ${userID} has not been loaded.` };
   }
 
-  if (!(roomID in roomsDB)) {
-    return { error: `room ${roomID} does not exist.` };
-  }
+  // if (!(roomID in roomsDB)) {
+  //   return { error: `room ${roomID} does not exist.` };
+  // }
 
   if (!(roomID in loadedRooms)) {
     return { error: `room ${roomID} has not been loaded` };
@@ -307,6 +305,29 @@ export const userCreateNewRoom = (userID: string) => {
   return { newID: id, newRoom: retVal };
 };
 
+/**
+ *
+ * @param userID user's email
+ * @effects creates a new room in the database, loads the room into memory, and joins the user to the room.
+ * @returns new ID and new room instance.
+ */
+export const userCreateNewRoom_R = async (userID: string) => {
+  let newRoom = await createNewRoom();
+  if (!newRoom) {
+    return;
+  }
+  const id = newRoom.roomID;
+  loadedRooms[id] = {
+    currentGameState: new Chess(newRoom.currentGameStateFEN),
+    history: newRoom.history,
+    playerBlack: newRoom.playerBlack,
+    playerWhite: newRoom.playerWhite,
+  };
+  userJoinRoom(userID, id);
+
+  return { newRoomID: id, newRoom: loadedRooms[id] };
+};
+
 const loadUser = (userID: string) => {
   if (!(userID in loadedUsers)) {
     if (!(userID in usersDB)) {
@@ -314,10 +335,6 @@ const loadUser = (userID: string) => {
     }
     loadedUsers[userID] = usersDB[userID];
   }
-
-  // else {
-  //   return { error: `user ${userID} already loaded.` };
-  // }
 };
 
 const createRoomInDB = () => {
@@ -393,8 +410,8 @@ const unloadUsersRooms = (userID: string) => {
 
   loadedUsers[userID].rooms.forEach((roomID) => {
     if (
-      loadedRooms[roomID].playerBlack == "" ||
-      loadedRooms[roomID].playerWhite == ""
+      !(loadedRooms[roomID].playerBlack in loadedUsers) ||
+      !(loadedRooms[roomID].playerWhite in loadedUsers)
     ) {
       let error = unloadRoom(roomID)?.error;
       if (error) {
@@ -403,6 +420,7 @@ const unloadUsersRooms = (userID: string) => {
     }
   });
 };
+
 const getRoomPlayerByString = (room: cachedRoomType, playerColor: string) => {
   if (playerColor == "playerBlack") {
     return room.playerBlack;
@@ -414,20 +432,22 @@ const getRoomPlayerByString = (room: cachedRoomType, playerColor: string) => {
 };
 
 export const userJoinRoom = (userID: string, roomID: string) => {
-  if (!(userID in usersDB)) {
-    return { error: `user ${userID} does not exist.` };
-  }
+  // if (!(userID in usersDB)) {
+  //   return { error: `user ${userID} does not exist.` };
+  // }
 
   if (!(userID in loadedUsers)) {
     return { error: `user ${userID} has not been loaded.` };
   }
 
-  if (!(roomID in roomsDB)) {
-    return { error: `room ${roomID} does not exist.` };
-  }
+  // if (!(roomID in roomsDB)) {
+  //   return { error: `room ${roomID} does not exist.` };
+  // }
 
   if (!(roomID in loadedRooms)) {
-    return { error: `room ${roomID} has not been loaded` };
+    return {
+      error: `room creator of ${roomID} must be active in order to join.`,
+    };
   }
 
   const roles: Array<string> = ["playerWhite", "playerBlack"];
@@ -437,7 +457,7 @@ export const userJoinRoom = (userID: string, roomID: string) => {
     loadedRooms[roomID].playerBlack != "" &&
     loadedRooms[roomID].playerWhite != ""
   ) {
-    return { userError: `room ${roomID} is full. ` };
+    return { userError: `room ${roomID} is full.` };
   }
 
   if (
@@ -449,28 +469,29 @@ export const userJoinRoom = (userID: string, roomID: string) => {
 
   if (getRoomPlayerByString(loadedRooms[roomID], "playerBlack") == "") {
     loadedRooms[roomID].playerBlack = userID;
-    console.log(loadedRooms[roomID]);
+    //console.log(loadedRooms[roomID]);
   } else {
     loadedRooms[roomID].playerWhite = userID;
-    console.log(loadedRooms[roomID]);
+    //console.log(loadedRooms[roomID]);
   }
+  console.log(roomID);
   loadedUsers[userID].rooms.push(roomID);
-
+  console.log(loadedUsers[userID].rooms);
   return { updatedRoom: loadedRooms[roomID] };
 };
 
 export const userLeaveRoom = (userID: string, roomID: string) => {
-  if (!(userID in usersDB)) {
-    return { error: `user ${userID} does not exist.` };
-  }
+  // if (!(userID in usersDB)) {
+  //   return { error: `user ${userID} does not exist.` };
+  // }
 
   if (!(userID in loadedUsers)) {
     return { error: `user ${userID} has not been loaded.` };
   }
 
-  if (!(roomID in roomsDB)) {
-    return { error: `room ${roomID} does not exist.` };
-  }
+  // if (!(roomID in roomsDB)) {
+  //   return { error: `room ${roomID} does not exist.` };
+  // }
 
   if (!(roomID in loadedRooms)) {
     return { error: `room ${roomID} has not been loaded` };
@@ -485,7 +506,7 @@ export const userLeaveRoom = (userID: string, roomID: string) => {
       error: `room ${roomID} does not have user a ${userID} to remove.`,
     };
   }
-
+  // delete particular room from user's cached room list.
   loadedUsers[userID].rooms = loadedUsers[userID].rooms.filter(
     (userRoomID) => userRoomID != roomID
   );
@@ -497,6 +518,33 @@ export const userLeaveRoom = (userID: string, roomID: string) => {
     if (error) {
       return { error: error };
     }
+  }
+};
+
+/**
+ *
+ * @param userID user's email
+ * @param roomID room's unique ID
+ * @effects removes user's name from room, if both users have left the room,
+ * the room is deleted from both the database and memory.
+ */
+export const userLeaveRoom_R = async (userID: string, roomID: string) => {
+  if (loadedRooms[roomID].playerBlack == userID) {
+    loadedRooms[roomID].playerBlack = "";
+  } else if (loadedRooms[roomID].playerWhite == userID) {
+    loadedRooms[roomID].playerWhite = "";
+  }
+  loadedUsers[userID].rooms = loadedUsers[userID].rooms.filter(
+    (userRoomID) => userRoomID != roomID
+  );
+
+  if (
+    loadedRooms[roomID].playerBlack == "" &&
+    loadedRooms[roomID].playerWhite == ""
+  ) {
+    Room.findOneAndDelete({ roomID: roomID }, () => {
+      delete loadedRooms[roomID];
+    });
   }
 };
 
@@ -553,10 +601,6 @@ const unloadUser = (userID: string) => {
 };
 
 export const getRoomPlayers = (roomID: string) => {
-  if (!(roomID in roomsDB)) {
-    return { error: `room ${roomID} does not exist.` };
-  }
-
   if (!(roomID in loadedRooms)) {
     return { error: `room ${roomID} has not been loaded` };
   }

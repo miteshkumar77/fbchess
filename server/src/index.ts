@@ -1,8 +1,5 @@
+// Imports
 import * as dotenv from "dotenv";
-dotenv.config();
-const db_connection_string = process.env.DATABASE;
-const PORT: string | number = process.env.PORT || 4000;
-let error;
 import express from "express";
 import socketio from "socket.io";
 import http from "http";
@@ -21,7 +18,16 @@ import {
   getRoomPlayers,
   getRoomGame,
   saveSystemMessage,
+  userConnect_R,
+  userCreateNewRoom_R,
+  userDisconnect_R,
+  userLeaveRoom_R,
 } from "./crud";
+
+import { mongoBegin } from "./models";
+
+const PORT: string | number = process.env.PORT || 4000;
+let error;
 
 interface userSocketMapType {
   [userID: string]: string;
@@ -35,39 +41,45 @@ const io = socketio(server);
 app.use(router);
 
 io.on("connection", (socket) => {
-  // console.log("A user connected.");
+  // socket.on("initialize", (email: string, callback) => {
+  //   console.log(`Connecting user ${email}.`);
+  //   error = userConnect(email)?.error;
+  //   if (error) {
+  //     callback({ error: error });
+  //     return;
+  //   }
+
+  //   let response = getMessageHist(email);
+  //   userSocket[email] = socket.id;
+
+  //   if (response.roomsList) {
+  //     socket.join(Object.keys(response.roomsList));
+  //   }
+  //   callback({ hist: response.roomsList });
+  // });
 
   socket.on("initialize", (email: string, callback) => {
     console.log(`Connecting user ${email}.`);
-    error = userConnect(email)?.error;
-    if (error) {
-      callback({ error: error });
-      return;
-    }
+    userConnect_R(email, () => {
+      let response = getMessageHist(email);
+      console.log(response);
+      userSocket[email] = socket.id;
 
-    let response = getMessageHist(email);
-    console.log(response.roomsList);
-    userSocket[email] = socket.id;
-    if (response.roomsList) {
-      socket.join(Object.keys(response.roomsList));
-      console.log(Object.keys(response.roomsList));
-    }
-    callback({ hist: response.roomsList });
+      if (response.roomsList) {
+        socket.join(Object.keys(response.roomsList));
+      }
+      callback({ hist: response.roomsList });
+    });
   });
 
-  // "@fbchess"
   socket.on("outbound_message", (roomID: string, message: msgType) => {
-    console.log("Message received: ");
-    console.log(message);
     saveMsg(message.from, roomID, message.msg);
     io.in(roomID).emit("message", roomID, message);
-    // console.log(message.msg.substring(0, 10));
     if (message.msg.length > 9 && message.msg.substring(0, 9) === "@fbchess ") {
-      console.log("MOVE TRIGGERED: " + message.msg);
       const roomPlayers = getRoomPlayers(roomID);
+      console.log(roomPlayers);
       const pW = roomPlayers.playerWhite ? roomPlayers.playerWhite : "";
       const pB = roomPlayers.playerBlack ? roomPlayers.playerBlack : "";
-      console.log("MOVE: |" + message.msg.substring(9));
       const systemMsg = getGameCmd(
         getRoomGame(roomID),
         message.from,
@@ -75,16 +87,23 @@ io.on("connection", (socket) => {
         pB,
         message.msg.substring(9)
       );
-      console.log(systemMsg);
       saveSystemMessage(roomID, systemMsg);
       io.to(roomID).emit("message", roomID, systemMsg);
     }
   });
+
+  // socket.on("deinitialize", (email: string, callback) => {
+  //   delete userSocket[email];
+  //   socket.leaveAll();
+  //   userDisconnect(email);
+  //   callback();
+  // });
+
   socket.on("deinitialize", (email: string, callback) => {
-    console.log(`Disconnecting user ${email}.`);
+    console.log(`Disconnecting ${email}.`);
     delete userSocket[email];
     socket.leaveAll();
-    userDisconnect(email);
+    userDisconnect_R(email);
     callback();
   });
 
@@ -128,9 +147,42 @@ io.on("connection", (socket) => {
     }
   );
 
+  // socket.on(
+  //   "leave_room",
+  //   (
+  //     userID: string,
+  //     roomID: string,
+  //     callback: ({ error }: { error: string }) => void
+  //   ) => {
+  //     let { playerBlack, playerWhite, error } = getRoomPlayers(roomID);
+  //     if (error) {
+  //       callback({ error: error });
+  //       return;
+  //     }
+
+  //     let result = userLeaveRoom(userID, roomID);
+  //     if (result?.error) {
+  //       callback({ error: result.error });
+  //       return;
+  //     }
+  //     if (playerBlack && playerBlack in userSocket) {
+  //       io.to(userSocket[playerBlack]).emit(
+  //         "incoming_room",
+  //         getUsersRooms(playerBlack)
+  //       );
+  //     }
+  //     if (playerWhite && playerWhite in userSocket) {
+  //       io.to(userSocket[playerWhite]).emit(
+  //         "incoming_room",
+  //         getUsersRooms(playerWhite)
+  //       );
+  //     }
+  //   }
+  // );
+
   socket.on(
     "leave_room",
-    (
+    async (
       userID: string,
       roomID: string,
       callback: ({ error }: { error: string }) => void
@@ -141,17 +193,15 @@ io.on("connection", (socket) => {
         return;
       }
 
-      let result = userLeaveRoom(userID, roomID);
-      if (result?.error) {
-        callback({ error: result.error });
-        return;
-      }
+      await userLeaveRoom_R(userID, roomID);
+
       if (playerBlack && playerBlack in userSocket) {
         io.to(userSocket[playerBlack]).emit(
           "incoming_room",
           getUsersRooms(playerBlack)
         );
       }
+
       if (playerWhite && playerWhite in userSocket) {
         io.to(userSocket[playerWhite]).emit(
           "incoming_room",
@@ -160,22 +210,36 @@ io.on("connection", (socket) => {
       }
     }
   );
+  // socket.on(
+  //   "new_room",
+  //   (userID: string, callback: ({ error }: { error: string }) => void) => {
+  //     let result = userCreateNewRoom(userID);
+  //     let error = result.error;
+  //     let userError = result.userError;
+  //     if (error) {
+  //       callback({ error: error });
+  //       return;
+  //     } else if (userError) {
+  //       callback({ error: userError });
+  //       return;
+  //     }
+  //     if (result.newID) {
+  //       socket.join(result.newID);
+  //       io.to(userSocket[userID]).emit("incoming_room", getUsersRooms(userID));
+  //     }
+  //   }
+  // );
+
   socket.on(
     "new_room",
-    (userID: string, callback: ({ error }: { error: string }) => void) => {
-      let result = userCreateNewRoom(userID);
-      let error = result.error;
-      let userError = result.userError;
-      if (error) {
-        callback({ error: error });
-        return;
-      } else if (userError) {
-        callback({ error: userError });
-        return;
-      }
-      if (result.newID) {
-        socket.join(result.newID);
-        console.log(getUsersRooms(userID));
+    async (
+      userID: string,
+      callback: ({ error }: { error: string }) => void
+    ) => {
+      let newRoom = await userCreateNewRoom_R(userID);
+      console.log(getUsersRooms(userID));
+      if (newRoom) {
+        socket.join(newRoom.newRoomID);
         io.to(userSocket[userID]).emit("incoming_room", getUsersRooms(userID));
       }
     }
@@ -186,6 +250,8 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+mongoBegin(() => {
+  server.listen(PORT, () => {
+    console.log(`Server started on port ${PORT}`);
+  });
 });
