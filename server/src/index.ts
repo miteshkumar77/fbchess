@@ -5,6 +5,7 @@ import socketio from "socket.io";
 import http from "http";
 import router from "./router";
 import { getGameCmd } from "./game";
+import path from "path";
 dotenv.config();
 
 import {
@@ -41,8 +42,10 @@ const server = http.createServer(app);
 const io = socketio(server);
 
 app.use(router);
+
 if (process.env.ENV === "PRODUCTION") {
-  app.use("/", express.static("../../client/build/static"));
+  console.log("Displaying front-end static files...");
+  app.use("/", express.static(path.join(__dirname, "../../client/build")));
 }
 io.on("connection", (socket) => {
   // socket.on("initialize", (email: string, callback) => {
