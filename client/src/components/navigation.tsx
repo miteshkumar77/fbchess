@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React from "react";
 import { useHistory } from "react-router-dom";
 import Button from "@material-ui/core/Button";
 import { logout } from "../helpers/auth";
@@ -11,7 +11,11 @@ export function LoginButton() {
   }
 
   return (
-    <Button color="inherit" onClick={handleClick}>
+    <Button
+      color="inherit"
+      variant="outlined"
+      style={{ margin: "5px" }}
+      onClick={handleClick}>
       Login
     </Button>
   );
@@ -25,7 +29,7 @@ export function SignupButton() {
   }
 
   return (
-    <Button color="inherit" onClick={handleClick}>
+    <Button color="inherit" variant="outlined" onClick={handleClick}>
       Sign Up
     </Button>
   );
@@ -40,7 +44,7 @@ export function LogoutButton() {
   }
 
   return (
-    <Button color="inherit" onClick={handleClick}>
+    <Button color="inherit" variant="outlined" onClick={handleClick}>
       Log Out
     </Button>
   );

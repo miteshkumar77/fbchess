@@ -109,7 +109,7 @@ export function Store(props: any) {
   const [rooms, dispatch] = React.useReducer(reducer, loadedinitstate);
 
   React.useEffect(() => {
-    const ENDPOINT = "http://localhost:4000";
+    const ENDPOINT = `http://localhost:${process.env.PORT || 4000}`;
     socket = io(ENDPOINT);
     socket.emit(
       "initialize",

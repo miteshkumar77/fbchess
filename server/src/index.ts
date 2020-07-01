@@ -5,6 +5,8 @@ import socketio from "socket.io";
 import http from "http";
 import router from "./router";
 import { getGameCmd } from "./game";
+dotenv.config();
+
 import {
   saveMsg,
   userConnect,
@@ -39,7 +41,9 @@ const server = http.createServer(app);
 const io = socketio(server);
 
 app.use(router);
-
+if (process.env.ENV === "PRODUCTION") {
+  app.use("/", express.static("../../client/build/static"));
+}
 io.on("connection", (socket) => {
   // socket.on("initialize", (email: string, callback) => {
   //   console.log(`Connecting user ${email}.`);

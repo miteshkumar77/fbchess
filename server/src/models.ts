@@ -6,11 +6,11 @@ const newGameFEN: string =
 import { board_default } from "./board_formulas";
 dotenv.config();
 
-if (!process.env.DATABASE_DEV) {
+if (!process.env.DATABASE_URL) {
   console.error("DB connection string not found. Exiting...");
   process.exit();
 }
-const db_uri: string = process.env.DATABASE_DEV;
+const db_uri: string = process.env.DATABASE_URL;
 
 export const mongoBegin = async (callback: () => any) => {
   mongoose.connect(

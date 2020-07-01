@@ -3,9 +3,6 @@ import { makeStyles } from "@material-ui/core/styles";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
-import Button from "@material-ui/core/Button";
-import { Link } from "react-router-dom";
-import { auth } from "../services/firebase";
 import { LoginButton, SignupButton } from "../components/navigation";
 
 const useStyles = makeStyles((theme) => ({
@@ -29,7 +26,7 @@ export default function Header() {
       <AppBar position="static">
         <Toolbar>
           <Typography className={classes.title} variant="h6">
-            Chess App
+            FB Chess
           </Typography>
           <div className={classes.right}>
             <LoginButton />

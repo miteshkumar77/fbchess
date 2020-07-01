@@ -42,6 +42,36 @@ const useStyles = makeStyles((theme) => ({
     textAlign: "center",
     width: "48px",
   },
+
+  letter_label: {
+    backgroundColor: "white",
+    border: "1px solid",
+    float: "left",
+    fontSize: "24px",
+    fontWeight: "bold",
+    lineHeight: "34px",
+    height: "48px",
+    marginRight: "-1px",
+    marginTop: "-1px",
+    padding: "0",
+    textAlign: "center",
+    width: "48px",
+  },
+
+  number_label: {
+    backgroundColor: "white",
+    border: "1px solid",
+    float: "left",
+    fontSize: "24px",
+    fontWeight: "bold",
+    lineHeight: "34px",
+    height: "48px",
+    marginRight: "-1px",
+    marginTop: "-1px",
+    padding: "0",
+    textAlign: "center",
+    width: "48px",
+  },
   row: {
     clear: "both",
     content: "",
@@ -50,9 +80,22 @@ const useStyles = makeStyles((theme) => ({
   board: {
     margin: "3px",
   },
+
+  labelLetter: {
+    fontSize: "8px",
+    marginTop: "40px",
+    marginLeft: "40px",
+  },
+
+  labelNumber: {
+    fontSize: "8px",
+    marginBottom: "40px",
+    marginRight: "40px",
+  },
 }));
 
 const eight_arr = [0, 1, 2, 3, 4, 5, 6, 7];
+const letters = ["a", "b", "c", "d", "e", "f", "g", "h"];
 interface PieceMap {
   [key: string]: string;
 }
@@ -74,9 +117,20 @@ const piece_map: PieceMap = {
 interface SquareData {
   shaded: boolean;
   piece: string;
+  number?: number;
 }
-const Square: React.FC<SquareData> = ({ shaded, piece }) => {
+const Square: React.FC<SquareData> = ({ shaded, piece, number }) => {
   const classes = useStyles();
+  if (number) {
+    return (
+      <>
+        <div className={classes.number_label}>{number}</div>
+        <div className={shaded ? classes.black_square : classes.white_square}>
+          {piece_map[piece] ? <img src={piece_map[piece]} alt="" /> : null}
+        </div>
+      </>
+    );
+  }
   return (
     <div className={shaded ? classes.black_square : classes.white_square}>
       {piece_map[piece] ? <img src={piece_map[piece]} alt="" /> : null}
@@ -91,7 +145,7 @@ interface BoardData {
 
 export const BoardSVG: React.FC<BoardData> = ({ player, data }) => {
   const classes = useStyles();
-  if (player === "W") {
+  if (player === "B") {
     let k = -1;
     let shade = false;
     return (
@@ -99,16 +153,37 @@ export const BoardSVG: React.FC<BoardData> = ({ player, data }) => {
         {eight_arr.map((i) => {
           const html = (
             <div className={classes.row} key={i}>
+              <text></text>
               {eight_arr.map((j) => {
                 k += 1;
                 shade = !shade;
-                return <Square key={k} shaded={shade} piece={data[k]} />;
+                if (j === 0) {
+                  return (
+                    <Square
+                      key={k}
+                      shaded={shade}
+                      piece={data[k]}
+                      number={i + 1}
+                    />
+                  );
+                } else {
+                  return <Square key={k} shaded={shade} piece={data[k]} />;
+                }
               })}
             </div>
           );
           shade = !shade;
           return html;
         })}
+        <div className={classes.row} key={9}>
+          <div className={classes.white_square}></div>
+
+          {eight_arr.map((i) => {
+            return (
+              <div className={classes.letter_label}>{letters[8 - i - 1]} </div>
+            );
+          })}
+        </div>
       </div>
     );
   } else {
@@ -122,13 +197,32 @@ export const BoardSVG: React.FC<BoardData> = ({ player, data }) => {
               {eight_arr.map((j) => {
                 k -= 1;
                 shade = !shade;
-                return <Square key={k} shaded={shade} piece={data[k]} />;
+
+                if (j === 0) {
+                  return (
+                    <Square
+                      key={k}
+                      shaded={shade}
+                      piece={data[k]}
+                      number={8 - i}
+                    />
+                  );
+                } else {
+                  return <Square key={k} shaded={shade} piece={data[k]} />;
+                }
               })}
             </div>
           );
           shade = !shade;
           return html;
         })}
+        <div className={classes.row} key={9}>
+          <div className={classes.white_square}></div>
+
+          {eight_arr.map((i) => {
+            return <div className={classes.letter_label}>{letters[i]} </div>;
+          })}
+        </div>
       </div>
     );
   }
