@@ -15,4 +15,6 @@ RUN mkdir dest
 RUN npm install 
 RUN npm run build 
 
+EXPOSE 4000
+
 CMD node dest/index.js
