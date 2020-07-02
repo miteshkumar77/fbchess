@@ -41,7 +41,7 @@ export const getGameCmd = (
   playerWhite: string,
   move: string
 ) => {
-  const playerColor = player == playerBlack ? "b" : "w";
+  const playerColor = player === playerBlack ? "b" : "w";
   const result: msgType = {
     from: "",
     to: "",

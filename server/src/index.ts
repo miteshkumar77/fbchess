@@ -90,8 +90,8 @@ io.on("connection", (socket) => {
       const systemMsg = getGameCmd(
         getRoomGame(roomID),
         message.from,
-        pW,
         pB,
+        pW,
         message.msg.substring(9)
       );
       saveSystemMessage(roomID, systemMsg);

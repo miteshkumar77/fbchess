@@ -110,7 +110,7 @@ export function Store(props: any) {
 
   React.useEffect(() => {
     const ENDPOINT = `http://localhost:${process.env.PORT || 4000}`;
-    socket = io(ENDPOINT);
+    socket = io();
     socket.emit(
       "initialize",
       email,
